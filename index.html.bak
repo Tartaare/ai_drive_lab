@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Car - Driving Experience</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #333;
+        }
+        
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* UI Layout */
+        .ui-panel {
+            position: fixed;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .hidden-ui {
+            display: none;
+        }
+
+        /* Level Selector */
+        #level-selector {
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+
+        select {
+            font-family: 'Inter', sans-serif;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: white;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:hover {
+            border-color: #bbb;
+        }
+
+        /* Controls */
+        #controls-container {
+            bottom: 20px;
+            left: 20px;
+            max-width: 250px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #111;
+            margin: 0;
+        }
+
+        #toggle-controls {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px;
+        }
+
+        #toggle-controls:hover {
+            color: #000;
+        }
+
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .key {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: #333;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        #controls-content.collapsed {
+            display: none;
+        }
+
+        .collapsed {
+            display: none;
+        }
+
+        /* Telemetry (Speed & Gear) */
+        #telemetry {
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            z-index: 100;
+            text-align: right;
+        }
+
+        .telemetry-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .telemetry-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #888;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .telemetry-value {
+            font-size: 32px;
+            font-weight: 300;
+            color: #111;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .telemetry-unit {
+            font-size: 12px;
+            color: #666;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        /* Loading Screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        
+        #loading.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        #loading h1 {
+            color: #111;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        #loading p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #eee;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-top: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Main Menu */
+        #main-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            color: #111;
+            z-index: 900;
+            transition: opacity 0.5s ease;
+        }
+
+        #main-menu.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .menu-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border-radius: 8px;
+            padding: 28px 32px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            text-align: center;
+            min-width: 260px;
+        }
+
+        #main-menu h1 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        #main-menu p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        #start-game {
+            margin-top: 4px;
+            padding: 10px 22px;
+            font-size: 13px;
+            border-radius: 999px;
+            border: 1px solid #111;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: #111;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+        }
+
+        #start-game:hover {
+            background: #000;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        #start-game:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Pause Menu */
+        #pause-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 950;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #pause-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #pause-overlay h1 {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        #pause-overlay p {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 16px;
+        }
+
+        #pause-overlay .pause-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        #resume-game,
+        #back-to-menu {
+            padding: 8px 18px;
+            font-size: 12px;
+            border-radius: 999px;
+            border: 1px solid #111;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+        }
+
+        #resume-game {
+            background: #111;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        #resume-game:hover {
+            background: #000;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+        }
+
+        #resume-game:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #back-to-menu {
+            background: #fff;
+            color: #111;
+        }
+
+        #back-to-menu:hover {
+            background: #f3f3f3;
+        }
+
+        #back-to-menu:active {
+            transform: translateY(1px);
+        }
+
+        /* Procedural Track Controls */
+        #procedural-controls {
+            top: 20px;
+            left: 20px;
+            max-width: 280px;
+            z-index: 100;
+        }
+
+        #procedural-controls p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .proc-group {
+            margin-top: 8px;
+        }
+
+        .proc-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #444;
+            margin-bottom: 2px;
+        }
+
+        .proc-group input[type="range"] {
+            width: 100%;
+        }
+
+        .proc-value {
+            font-weight: 600;
+            color: #111;
+        }
+
+        #proc-regenerate {
+            margin-top: 4px;
+            margin-bottom: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 999px;
+            border: 1px solid #111;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: #fff;
+            color: #111;
+        }
+
+        #proc-regenerate:hover {
+            background: #f3f3f3;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <h1>Simple Car ML</h1>
+        <p>Initialisation de l'environnement...</p>
+        <div class="loader"></div>
+    </div>
+    
+    <!-- Main Menu -->
+    <div id="main-menu" class="hidden">
+        <div class="menu-panel">
+            <h1>Simple Car ML</h1>
+            <p>Clique sur le bouton ci-dessous pour lancer la partie.</p>
+            <div style="margin-bottom: 12px; margin-top: 8px;">
+                <label for="main-menu-level-select" style="font-size: 13px; color: #555; margin-right: 8px;">Circuit :</label>
+                <select id="main-menu-level-select">
+                    <option value="default">Circuit Default</option>
+                    <option value="procedural">Circuit procédural</option>
+                </select>
+            </div>
+            <button id="start-game">Lancer la partie</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-overlay">
+        <div class="menu-panel">
+            <h1>Pause</h1>
+            <p>Le jeu est en pause.</p>
+            <div class="pause-actions">
+                <button id="resume-game">Reprendre</button>
+                <button id="back-to-menu">Retour au menu principal</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Level Selector -->
+    <div id="level-selector" class="ui-panel hidden-ui">
+        <div id="level-selector-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 style="margin:0;font-size:14px;">Circuits</h3>
+            <button id="toggle-level-panel" style="background:none;border:none;color:#666;cursor:pointer;font-size:12px;">Masquer</button>
+        </div>
+        <div id="level-selector-content">
+            <select id="level-select">
+                <option value="default">Circuit Default</option>
+                <option value="procedural">Circuit procédural</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls-container" class="ui-panel hidden-ui">
+        <div id="controls-header">
+            <h3>Commandes</h3>
+            <button id="toggle-controls">Masquer</button>
+        </div>
+        <div id="controls-content">
+            <div class="control-item">
+                <span>Accélérer / Freiner</span>
+                <div><span class="key">W</span> <span class="key">S</span></div>
+            </div>
+            <div class="control-item">
+                <span>Direction</span>
+                <div><span class="key">A</span> <span class="key">D</span></div>
+            </div>
+            <div class="control-item">
+                <span>Frein à main</span>
+                <span class="key" style="width: auto; padding: 2px 8px;">Espace</span>
+            </div>
+            <div class="control-item">
+                <span>Réinitialiser</span>
+                <span class="key">R</span>
+            </div>
+            <div class="control-item" style="margin-top: 10px; font-size: 11px; color: #888;">
+                🖱️ Souris pour la caméra
+            </div>
+        </div>
+    </div>
+
+    <div id="telemetry" class="ui-panel hidden-ui">
+        <div class="telemetry-group">
+            <div class="telemetry-label">Vitesse</div>
+            <div class="telemetry-value"><span id="speed-value">0</span><span class="telemetry-unit">km/h</span></div>
+        </div>
+        <div class="telemetry-group">
+            <div class="telemetry-label">Rapport</div>
+            <div class="telemetry-value"><span id="gear-value">-</span></div>
+        </div>
+        <div class="telemetry-group">
+            <div class="telemetry-label">RPM</div>
+            <div class="telemetry-value"><span id="rpm-value">0</span><span class="telemetry-unit">tr/min</span></div>
+        </div>
+    </div>
+
+    <!-- Procedural Track Controls -->
+    <div id="procedural-controls" class="ui-panel hidden-ui">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <h3 style="margin:0;font-size:14px;">Circuit procédural</h3>
+            <button id="toggle-proc-panel" style="background:none;border:none;color:#666;cursor:pointer;font-size:12px;">Masquer</button>
+        </div>
+        <p>Ajuste la forme du circuit. Les changements sont appliqués immédiatement.</p>
+
+        <div id="procedural-content">
+        <button id="proc-regenerate">🔄 Nouveau circuit</button>
+
+        <div class="proc-group">
+            <label>
+                Points de contrôle
+                <span id="proc-numControlPoints-value" class="proc-value">-</span>
+            </label>
+            <input
+                id="proc-numControlPoints"
+                type="range"
+                min="6"
+                max="20"
+                step="1"
+                value="12"
+            />
+        </div>
+
+        <div class="proc-group">
+            <label>
+                Rayon de base
+                <span id="proc-baseRadius-value" class="proc-value">-</span>
+            </label>
+            <input
+                id="proc-baseRadius"
+                type="range"
+                min="30"
+                max="150"
+                step="1"
+                value="50"
+            />
+        </div>
+
+        <div class="proc-group">
+            <label>
+                Variation rayon
+                <span id="proc-radiusVariation-value" class="proc-value">-</span>
+            </label>
+            <input
+                id="proc-radiusVariation"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="40"
+            />
+        </div>
+
+        <div class="proc-group">
+            <label>
+                Variation angle
+                <span id="proc-angleVariation-value" class="proc-value">-</span>
+            </label>
+            <input
+                id="proc-angleVariation"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value="30"
+            />
+        </div>
+
+        <div class="proc-group">
+            <label>
+                Largeur de route
+                <span id="proc-trackWidth-value" class="proc-value">-</span>
+            </label>
+            <input
+                id="proc-trackWidth"
+                type="range"
+                min="5"
+                max="30"
+                step="1"
+                value="10"
+            />
+        </div>
+        </div>
+    </div>
+    
+    <script src="build/simple_car.min.js"></script>
+    <script>
+        // Initialize World
+        let world = null;
+        let gameStarted = false;
+
+			const loadingEl = document.getElementById('loading');
+		const mainMenuEl = document.getElementById('main-menu');
+		const startButton = document.getElementById('start-game');
+		const pauseOverlay = document.getElementById('pause-overlay');
+		const resumeButton = document.getElementById('resume-game');
+		const backToMenuButton = document.getElementById('back-to-menu');
+        const mainMenuLevelSelect = document.getElementById('main-menu-level-select');
+        const proceduralPanel = document.getElementById('procedural-controls');
+        const proceduralContent = document.getElementById('procedural-content');
+        const procToggleBtn = document.getElementById('toggle-proc-panel');
+        const levelPanelToggleBtn = document.getElementById('toggle-level-panel');
+        const levelSelectorContent = document.getElementById('level-selector-content');
+        const procRegenerateBtn = document.getElementById('proc-regenerate');
+        const procNumControlPoints = document.getElementById('proc-numControlPoints');
+        const procBaseRadius = document.getElementById('proc-baseRadius');
+        const procRadiusVariation = document.getElementById('proc-radiusVariation');
+        const procAngleVariation = document.getElementById('proc-angleVariation');
+        const procTrackWidth = document.getElementById('proc-trackWidth');
+        const procNumControlPointsValue = document.getElementById('proc-numControlPoints-value');
+        const procBaseRadiusValue = document.getElementById('proc-baseRadius-value');
+        const procRadiusVariationValue = document.getElementById('proc-radiusVariation-value');
+        const procAngleVariationValue = document.getElementById('proc-angleVariation-value');
+        const procTrackWidthValue = document.getElementById('proc-trackWidth-value');
+
+        function refreshProceduralUIFromWorld() {
+            if (!world || typeof world.getProceduralConfig !== 'function') return;
+            const cfg = world.getProceduralConfig();
+
+            if (procNumControlPoints && procNumControlPointsValue) {
+                procNumControlPoints.value = String(cfg.numControlPoints);
+                procNumControlPointsValue.textContent = String(cfg.numControlPoints);
+            }
+            if (procBaseRadius && procBaseRadiusValue) {
+                procBaseRadius.value = String(cfg.baseRadius);
+                procBaseRadiusValue.textContent = String(cfg.baseRadius);
+            }
+            if (procRadiusVariation && procRadiusVariationValue) {
+                const v = Math.round(cfg.radiusVariation * 100);
+                procRadiusVariation.value = String(v);
+                procRadiusVariationValue.textContent = v + '%';
+            }
+            if (procAngleVariation && procAngleVariationValue) {
+                const v = Math.round(cfg.angleVariation * 100);
+                procAngleVariation.value = String(v);
+                procAngleVariationValue.textContent = v + '%';
+            }
+            if (procTrackWidth && procTrackWidthValue) {
+                procTrackWidth.value = String(cfg.trackWidth);
+                procTrackWidthValue.textContent = String(cfg.trackWidth);
+            }
+        }
+
+		let levelPanelExpanded = true;
+		if (levelPanelToggleBtn && levelSelectorContent) {
+			levelPanelToggleBtn.addEventListener('click', () => {
+				levelPanelExpanded = !levelPanelExpanded;
+				if (levelPanelExpanded) {
+					levelSelectorContent.classList.remove('collapsed');
+					levelPanelToggleBtn.textContent = 'Masquer';
+				} else {
+					levelSelectorContent.classList.add('collapsed');
+					levelPanelToggleBtn.textContent = 'Afficher';
+				}
+			});
+		}
+
+		let proceduralPanelExpanded = true;
+		if (procToggleBtn && proceduralContent) {
+			procToggleBtn.addEventListener('click', () => {
+				proceduralPanelExpanded = !proceduralPanelExpanded;
+				if (proceduralPanelExpanded) {
+					proceduralContent.classList.remove('collapsed');
+					procToggleBtn.textContent = 'Masquer';
+				} else {
+					proceduralContent.classList.add('collapsed');
+					procToggleBtn.textContent = 'Afficher';
+				}
+			});
+		}
+
+        function startGame() {
+            if (gameStarted) return;
+            gameStarted = true;
+
+            if (mainMenuEl) {
+                mainMenuEl.classList.add('hidden');
+            }
+
+				let initialLevel = 'default';
+				if (mainMenuLevelSelect && mainMenuLevelSelect.value) {
+					initialLevel = mainMenuLevelSelect.value;
+				}
+				world = new SimpleCar.World('car_models/car_blue.glb', initialLevel);
+
+            				const levelSelectorPanel = document.getElementById('level-selector');
+            const controlsPanel = document.getElementById('controls-container');
+            const telemetryPanel = document.getElementById('telemetry');
+
+            if (levelSelectorPanel) levelSelectorPanel.classList.remove('hidden-ui');
+            if (controlsPanel) controlsPanel.classList.remove('hidden-ui');
+            if (telemetryPanel) telemetryPanel.classList.remove('hidden-ui');
+
+				// Synchroniser le sélecteur de niveau in-game avec le niveau initial
+				const inGameLevelSelect = document.getElementById('level-select');
+				if (inGameLevelSelect && initialLevel) {
+					inGameLevelSelect.value = initialLevel;
+				}
+
+				// Afficher/masquer les contrôles procéduraux selon le niveau
+				if (proceduralPanel) {
+					if (initialLevel === 'procedural') {
+						proceduralPanel.classList.remove('hidden-ui');
+						refreshProceduralUIFromWorld();
+					} else {
+						proceduralPanel.classList.add('hidden-ui');
+					}
+				}
+        }
+
+        		if (startButton) {
+			startButton.addEventListener('click', startGame);
+		}
+
+		if (resumeButton) {
+			resumeButton.addEventListener('click', () => {
+				if (world && typeof world.resume === 'function') {
+					world.resume();
+				}
+				pauseOverlay.classList.remove('visible');
+			});
+		}
+
+		if (backToMenuButton) {
+			backToMenuButton.addEventListener('click', () => {
+				if (world && typeof world.dispose === 'function') {
+					world.dispose();
+				}
+				world = null;
+				gameStarted = false;
+
+				pauseOverlay.classList.remove('visible');
+
+				const levelSelectorPanel = document.getElementById('level-selector');
+				const controlsPanel = document.getElementById('controls-container');
+				const telemetryPanel = document.getElementById('telemetry');
+				if (levelSelectorPanel) levelSelectorPanel.classList.add('hidden-ui');
+				if (controlsPanel) controlsPanel.classList.add('hidden-ui');
+				if (telemetryPanel) telemetryPanel.classList.add('hidden-ui');
+				if (proceduralPanel) proceduralPanel.classList.add('hidden-ui');
+
+				const speedValue = document.getElementById('speed-value');
+				const gearValue = document.getElementById('gear-value');
+				if (speedValue) speedValue.textContent = '0';
+				if (gearValue) gearValue.textContent = 'N';
+
+				mainMenuEl.classList.remove('hidden');
+				
+				if (document.activeElement && document.activeElement.blur) {
+					document.activeElement.blur();
+				}
+			});
+		}
+
+        // Hide loading screen
+        setTimeout(() => {
+            if (loadingEl) {
+                loadingEl.classList.add('hidden');
+            }
+            if (mainMenuEl) {
+                mainMenuEl.classList.remove('hidden');
+            }
+        }, 1500);
+        
+        // UI Logic: Telemetry Loop
+        setInterval(() => {
+            if (!world || !world.car) return;
+            const speedEl = document.getElementById('speed-value');
+            const gearEl = document.getElementById('gear-value');
+            const rpmEl = document.getElementById('rpm-value');
+            if (!speedEl || !gearEl) return;
+            
+            // Update Speed
+            const speedKmh = Math.abs(Math.round(world.car.speed * 3.6));
+            speedEl.textContent = String(speedKmh);
+            
+            // Update Gear
+            const gear = world.car.currentGear;
+            let gearDisplay = gear;
+            if (gear === 0) gearDisplay = 'N'; // Neutral?
+            if (gear === undefined) gearDisplay = '-';
+            if (world.car.speed < -0.1) gearDisplay = 'R';
+            gearEl.textContent = String(gearDisplay);
+
+            if (rpmEl) {
+                const speedAbs = Math.abs(world.car.speed);
+                const idleRpm = 900;
+                const redlineRpm = 7200;
+
+                const gearMaxSpeeds = {
+                    R: 4,
+                    0: 0,
+                    1: 5,
+                    2: 9,
+                    3: 13,
+                    4: 17,
+                    5: 22,
+                };
+
+                let maxSpeed = gearMaxSpeeds[String(gear)] ?? gearMaxSpeeds[1];
+                if (world.car.speed < -0.1) maxSpeed = gearMaxSpeeds.R;
+
+                const ratio = maxSpeed > 0 ? Math.min(speedAbs / maxSpeed, 1) : 0;
+                const rpm = Math.round(idleRpm + ratio * (redlineRpm - idleRpm));
+                rpmEl.textContent = String(rpm);
+            }
+        }, 100);
+
+        // UI Logic: Controls Toggle
+        const toggleBtn = document.getElementById('toggle-controls');
+        const controlsContent = document.getElementById('controls-content');
+        let controlsVisible = true;
+
+        toggleBtn.addEventListener('click', () => {
+            controlsVisible = !controlsVisible;
+            if (controlsVisible) {
+                controlsContent.classList.remove('collapsed');
+                toggleBtn.textContent = 'Masquer';
+            } else {
+                controlsContent.classList.add('collapsed');
+                toggleBtn.textContent = 'Afficher';
+            }
+        });
+
+        // UI Logic: Level Selection
+        		const levelSelect = document.getElementById('level-select');
+		levelSelect.addEventListener('change', (e) => {
+			if (world && typeof world.setLevel === 'function') {
+				world.setLevel(e.target.value);
+			}
+			// Blur focus so keyboard controls work immediately
+			levelSelect.blur();
+
+			// Afficher/masquer les contrôles procéduraux selon le niveau sélectionné
+			if (proceduralPanel) {
+				if (e.target.value === 'procedural') {
+					proceduralPanel.classList.remove('hidden-ui');
+					refreshProceduralUIFromWorld();
+				} else {
+					proceduralPanel.classList.add('hidden-ui');
+				}
+			}
+		});
+
+		// Logique UI : sliders de circuit procédural
+		if (procRegenerateBtn) {
+			procRegenerateBtn.addEventListener('click', () => {
+				if (world && typeof world.randomizeProceduralSeed === 'function') {
+					world.randomizeProceduralSeed();
+					refreshProceduralUIFromWorld();
+				}
+			});
+		}
+
+		if (procNumControlPoints) {
+			procNumControlPoints.addEventListener('input', () => {
+				if (world && typeof world.setProceduralParameter === 'function') {
+					const v = parseInt(procNumControlPoints.value, 10);
+					world.setProceduralParameter('numControlPoints', v);
+					if (procNumControlPointsValue) procNumControlPointsValue.textContent = String(v);
+				}
+			});
+		}
+
+		if (procBaseRadius) {
+			procBaseRadius.addEventListener('input', () => {
+				if (world && typeof world.setProceduralParameter === 'function') {
+					const v = parseInt(procBaseRadius.value, 10);
+					world.setProceduralParameter('baseRadius', v);
+					if (procBaseRadiusValue) procBaseRadiusValue.textContent = String(v);
+				}
+			});
+		}
+
+		if (procRadiusVariation) {
+			procRadiusVariation.addEventListener('input', () => {
+				if (world && typeof world.setProceduralParameter === 'function') {
+					const v = parseInt(procRadiusVariation.value, 10);
+					world.setProceduralParameter('radiusVariation', v / 100);
+					if (procRadiusVariationValue) procRadiusVariationValue.textContent = v + '%';
+				}
+			});
+		}
+
+		if (procAngleVariation) {
+			procAngleVariation.addEventListener('input', () => {
+				if (world && typeof world.setProceduralParameter === 'function') {
+					const v = parseInt(procAngleVariation.value, 10);
+					world.setProceduralParameter('angleVariation', v / 100);
+					if (procAngleVariationValue) procAngleVariationValue.textContent = v + '%';
+				}
+			});
+		}
+
+		if (procTrackWidth) {
+			procTrackWidth.addEventListener('input', () => {
+				if (world && typeof world.setProceduralParameter === 'function') {
+					const v = parseInt(procTrackWidth.value, 10);
+					world.setProceduralParameter('trackWidth', v);
+					if (procTrackWidthValue) procTrackWidthValue.textContent = String(v);
+				}
+			});
+		}
+
+    </script>
+</body>
+</html>
