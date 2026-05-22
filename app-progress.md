@@ -97,3 +97,26 @@
 # Risques restants :
 - La génération reste synchrone ; l’UI affiche bien l’état avant calcul, mais le thread principal reste occupé pendant la recherche.
 - Les sliders Track Configuration déclenchent toujours une génération directe à chaque input.
+
+# SPRINT track-edge-lines-kerb-collisions — Bordures piste et collisions kerbs
+
+# Date : 2026-05-22
+
+# Statut : terminé
+
+# Composants :
+- `src/ts/world/ProceduralTrack.ts`
+- `src/ts/main.ts`
+- `scripts/test-trackgen.js`
+
+# Validation :
+- Ajout de bandes blanches mesh continues sur les deux bords procéduraux, largeur `0.18 m`, inférieure aux kerbs `0.8 m`.
+- Ajout de collisions Cannon statiques pour les kerbs procéduraux, recréées à chaque génération/changement de circuit.
+- `npm run test:trackgen` : succès sur `406` cas.
+- `npm run build` : succès.
+- `npx tsc --noEmit` : bloqué par incompatibilité existante entre `typescript@3.9.9` et les définitions récentes `@types/node` / `undici-types`.
+- Dev server local `http://127.0.0.1:5173/` : réponse HTTP `200`.
+
+# Risques restants :
+- Les collisions kerbs utilisent un `Trimesh` statique par côté ; performance à surveiller sur machines faibles si le nombre de segments kerbs augmente fortement.
+- Le navigateur intégré n’était pas pilotable dans cette session faute d’outil `node_repl js` exposé ; validation visuelle manuelle recommandée sur piste procédurale.
