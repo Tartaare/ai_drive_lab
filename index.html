@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>APEX - Next Gen Racing</title>
     <link rel="stylesheet" href="src/css/style.css">
 </head>
+
 <body>
     <!-- Game Layer -->
     <div id="game-container"></div>
 
     <!-- UI Layer -->
     <div class="ui-layer" id="ui-layer">
-        
+
         <!-- Loading -->
         <div id="loading" class="loader-overlay">
             <h3 style="letter-spacing: 0.2em; font-size: 0.9rem; margin-bottom: 20px;">INITIALIZING ENGINE</h3>
@@ -24,8 +26,9 @@
         <!-- Settings Toggle (In-Game) -->
         <button id="toggle-settings" class="settings-toggle hidden">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+                <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" />
             </svg>
         </button>
 
@@ -35,7 +38,7 @@
                 <div class="main-title">APEX</div>
                 <div class="subtitle">PHYSICS DRIVING SIMULATION</div>
             </div>
-            
+
             <div class="menu-grid">
                 <div style="position: relative;">
                     <label class="slider-label" style="position: absolute; top: -20px; left: 0;">SELECT TRACK</label>
@@ -44,7 +47,7 @@
                         <option value="procedural">INFINITE PROCEDURAL</option>
                     </select>
                 </div>
-                
+
                 <button id="start-game" class="cyber-btn">
                     START ENGINE
                 </button>
@@ -56,7 +59,8 @@
             <h1 style="font-size: 5rem; margin-bottom: 2rem; opacity: 0.8; letter-spacing: 0.1em;">PAUSED</h1>
             <div class="menu-grid" style="max-width: 300px;">
                 <button id="resume-game" class="cyber-btn">RESUME</button>
-                <button id="back-to-menu" class="cyber-btn" style="border-color: var(--c-danger);">ABORT SESSION</button>
+                <button id="back-to-menu" class="cyber-btn" style="border-color: var(--c-danger);">ABORT
+                    SESSION</button>
             </div>
         </div>
 
@@ -86,7 +90,8 @@
                 </div>
             </div>
 
-            <div id="rpm-debug" style="position:absolute; bottom: 18px; left: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; color: rgba(255,255,255,0.75); pointer-events: none; user-select: none;">
+            <div id="rpm-debug"
+                style="position:absolute; bottom: 18px; left: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; color: rgba(255,255,255,0.75); pointer-events: none; user-select: none;">
                 RPM: 0
             </div>
         </div>
@@ -94,11 +99,13 @@
         <!-- HUD: Controls Hint -->
         <div id="controls-hint" class="controls-hint hidden">
             <div class="key-group">
-                <div class="key-icon">Z</div><div class="key-icon">S</div>
+                <div class="key-icon">Z</div>
+                <div class="key-icon">S</div>
                 <span class="key-desc">THROTTLE / BRAKE</span>
             </div>
             <div class="key-group">
-                <div class="key-icon">Q</div><div class="key-icon">D</div>
+                <div class="key-icon">Q</div>
+                <div class="key-icon">D</div>
                 <span class="key-desc">STEER</span>
             </div>
             <div class="key-group">
@@ -110,7 +117,8 @@
                 <span class="key-desc">AUTO / MANUAL</span>
             </div>
             <div class="key-group">
-                <div class="key-icon">↑</div><div class="key-icon">↓</div>
+                <div class="key-icon">↑</div>
+                <div class="key-icon">↓</div>
                 <span class="key-desc">SHIFT</span>
             </div>
             <div class="key-group">
@@ -125,8 +133,9 @@
                 <h3>TRACK CONFIGURATION</h3>
                 <button id="close-settings" class="close-btn">&times;</button>
             </div>
-            
-            <button id="proc-regenerate" class="cyber-btn" style="width: 100%; margin-bottom: 0.75rem; font-size: 0.9rem;">
+
+            <button id="proc-regenerate" class="cyber-btn"
+                style="width: 100%; margin-bottom: 0.75rem; font-size: 0.9rem;">
                 GENERATE NEW TRACK
             </button>
             <div id="proc-generation-log" class="track-generation-log" role="status" aria-live="polite" hidden></div>
@@ -134,7 +143,8 @@
             <!-- Difficulty Preset Selector -->
             <div class="slider-group" style="margin-bottom: 2rem;">
                 <div class="slider-label"><span>DIFFICULTY PRESET</span></div>
-                <select id="proc-difficulty" class="cyber-select" style="margin-top: 0.5rem; font-family: var(--font-display); background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                <select id="proc-difficulty" class="cyber-select"
+                    style="margin-top: 0.5rem; font-family: var(--font-display); background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
                     <option value="facile">EASY</option>
                     <option value="moyen" selected>MEDIUM</option>
                     <option value="difficile">HARD</option>
@@ -145,27 +155,32 @@
             </div>
 
             <div class="slider-group">
-                <div class="slider-label"><span>COMPLEXITY</span> <span class="slider-value" id="proc-numControlPoints-value">12</span></div>
-                <input id="proc-numControlPoints" type="range" min="6" max="20" step="1" value="12">
+                <div class="slider-label"><span>COMPLEXITY</span> <span class="slider-value"
+                        id="proc-numControlPoints-value">7</span></div>
+                <input id="proc-numControlPoints" type="range" min="6" max="14" step="1" value="7">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label"><span>SCALE</span> <span class="slider-value" id="proc-baseRadius-value">50</span></div>
+                <div class="slider-label"><span>SCALE</span> <span class="slider-value"
+                        id="proc-baseRadius-value">50</span></div>
                 <input id="proc-baseRadius" type="range" min="30" max="150" step="1" value="50">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label"><span>CHAOS</span> <span class="slider-value" id="proc-radiusVariation-value">40%</span></div>
+                <div class="slider-label"><span>CHAOS</span> <span class="slider-value"
+                        id="proc-radiusVariation-value">40%</span></div>
                 <input id="proc-radiusVariation" type="range" min="0" max="100" step="1" value="40">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label"><span>TWIST</span> <span class="slider-value" id="proc-angleVariation-value">30%</span></div>
+                <div class="slider-label"><span>TWIST</span> <span class="slider-value"
+                        id="proc-angleVariation-value">30%</span></div>
                 <input id="proc-angleVariation" type="range" min="0" max="100" step="1" value="30">
             </div>
 
             <div class="slider-group">
-                <div class="slider-label"><span>WIDTH</span> <span class="slider-value" id="proc-trackWidth-value">10</span></div>
+                <div class="slider-label"><span>WIDTH</span> <span class="slider-value"
+                        id="proc-trackWidth-value">10</span></div>
                 <input id="proc-trackWidth" type="range" min="5" max="30" step="1" value="10">
             </div>
         </div>
@@ -177,7 +192,7 @@
         // --- Core Variables ---
         let world = null;
         let gameStarted = false;
-        
+
         // --- UI Refs ---
         const ui = {
             loading: document.getElementById('loading'),
@@ -187,7 +202,7 @@
             controlsHint: document.getElementById('controls-hint'),
             settingsToggle: document.getElementById('toggle-settings'),
             settingsPanel: document.getElementById('settings-panel'),
-            
+
             // Interactive
             startBtn: document.getElementById('start-game'),
             resumeBtn: document.getElementById('resume-game'),
@@ -195,18 +210,18 @@
             closeSettingsBtn: document.getElementById('close-settings'),
             procRegenBtn: document.getElementById('proc-regenerate'),
             procGenerationLog: document.getElementById('proc-generation-log'),
-            
+
             // Inputs
             mainLevelSelect: document.getElementById('main-menu-level-select'),
             difficulty: document.getElementById('proc-difficulty'),
-            
+
             // Telemetry
             speedVal: document.getElementById('speed-value'),
             gearVal: document.getElementById('gear-value'),
             transmissionMode: document.getElementById('transmission-mode'),
             rpmArc: document.getElementById('rpm-arc'),
             rpmDebug: document.getElementById('rpm-debug'),
-            
+
             // Procedural
             sliders: {
                 numControlPoints: document.getElementById('proc-numControlPoints'),
@@ -239,7 +254,7 @@
             gameStarted = true;
 
             const level = ui.mainLevelSelect.value;
-            
+
             // Dispose old if exists
             if (world && world.dispose) world.dispose();
 
@@ -258,7 +273,7 @@
                 ui.settingsToggle.style.display = 'flex';
             } else {
                 ui.settingsToggle.style.display = 'none';
-                if(level !== 'procedural') ui.settingsToggle.classList.add('hidden');
+                if (level !== 'procedural') ui.settingsToggle.classList.add('hidden');
             }
         }
 
@@ -272,9 +287,9 @@
             ui.controlsHint.classList.add('hidden');
             ui.settingsToggle.classList.add('hidden');
             ui.settingsPanel.classList.remove('active');
-            
+
             ui.mainMenu.classList.remove('hidden');
-            
+
             // Reset Gauge
             updateRPM(0, 0);
         }
@@ -282,12 +297,12 @@
         function togglePause() {
             if (!gameStarted) return;
             const isPaused = !ui.pauseMenu.classList.contains('hidden');
-            
+
             if (isPaused) {
                 if (world && world.resume) world.resume();
                 ui.pauseMenu.classList.add('hidden');
             } else {
-                if (world && world.pause) world.pause(); 
+                if (world && world.pause) world.pause();
                 ui.pauseMenu.classList.remove('hidden');
             }
         }
@@ -295,11 +310,11 @@
         // --- Event Listeners ---
         ui.startBtn.addEventListener('click', startGame);
         ui.resumeBtn.addEventListener('click', () => {
-             if (world && world.resume) world.resume();
-             ui.pauseMenu.classList.add('hidden');
+            if (world && world.resume) world.resume();
+            ui.pauseMenu.classList.add('hidden');
         });
         ui.menuBtn.addEventListener('click', stopGame);
-        
+
         ui.settingsToggle.addEventListener('click', () => {
             ui.settingsPanel.classList.toggle('active');
         });
@@ -348,7 +363,7 @@
         function refreshSettingsUI() {
             if (!world || !world.getProceduralConfig) return;
             const cfg = world.getProceduralConfig();
-            
+
             updateSlider(ui.sliders.numControlPoints, ui.values.numControlPoints, cfg.numControlPoints);
             updateSlider(ui.sliders.baseRadius, ui.values.baseRadius, cfg.baseRadius);
             updateSlider(ui.sliders.radiusVariation, ui.values.radiusVariation, Math.round(cfg.radiusVariation * 100), '%');
@@ -395,7 +410,7 @@
             ui.rpmArc.style.strokeDasharray = `${MAX_RPM_OFFSET}`;
             ui.rpmArc.style.strokeDashoffset = `${MAX_RPM_OFFSET}`;
         }
-        
+
         function updateRPM(currentRpm, maxRpm) {
             if (!ui.rpmArc || !MAX_RPM_OFFSET || !Number.isFinite(MAX_RPM_OFFSET)) return;
 
@@ -407,12 +422,12 @@
 
             // Calculate ratio 0..1
             const ratio = Math.min(Math.max(currentRpm / maxRpm, 0), 1);
-            
+
             // Calculate offset: 400 (empty) -> 0 (full)
             const offset = MAX_RPM_OFFSET - (ratio * MAX_RPM_OFFSET);
-            
+
             ui.rpmArc.style.strokeDashoffset = offset;
-            
+
             // Redline effect
             if (ratio > 0.9) {
                 ui.rpmArc.classList.add('redline');
@@ -438,8 +453,7 @@
             else if (gear === 0) gearText = 'N';
             ui.gearVal.textContent = gearText;
 
-            if (ui.transmissionMode)
-            {
+            if (ui.transmissionMode) {
                 ui.transmissionMode.textContent = isManual ? 'MAN' : 'AUTO';
             }
 
@@ -447,8 +461,7 @@
             const currentRpm = world.car.currentRpm || 0;
             const redlineRpm = world.car.redlineRpm || 8000;
 
-            if (ui.rpmDebug)
-            {
+            if (ui.rpmDebug) {
                 const rpmText = Math.round(currentRpm);
                 const maxText = Math.round(redlineRpm);
                 ui.rpmDebug.textContent = `RPM: ${rpmText} / ${maxText}`;
@@ -460,4 +473,5 @@
 
     </script>
 </body>
+
 </html>
