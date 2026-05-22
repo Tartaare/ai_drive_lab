@@ -5,7 +5,8 @@
   "main": "build/simple_car.min.js",
   "scripts": {
     "dev": "webpack-dev-server --config webpack.dev.js",
-    "build": "webpack --config webpack.prod.js"
+    "build": "webpack --config webpack.prod.js",
+    "test:trackgen": "node scripts/test-trackgen.js"
   },
   "author": "",
   "license": "MIT",

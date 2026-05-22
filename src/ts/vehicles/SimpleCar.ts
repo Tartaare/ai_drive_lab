@@ -5,7 +5,7 @@ import { KeyBinding } from '../core/KeyBinding';
 import { SpringSimulator } from '../physics/spring_simulation/SpringSimulator';
 import * as Utils from '../core/Utils';
 
-export type SurfaceType = 'default' | 'asphalt' | 'grass' | 'dirt' | 'ice';
+export type SurfaceType = 'default' | 'asphalt' | 'grass' | 'dirt' | 'ice' | 'kerb';
 export type TireCompound = 'street' | 'sport' | 'offroad';
 
 export class SimpleCar extends THREE.Object3D {
@@ -103,7 +103,8 @@ export class SimpleCar extends THREE.Object3D {
 			asphalt: 1.0,
 			grass: 0.55,
 			dirt: 0.75,
-			ice: 0.2
+			ice: 0.2,
+			kerb: 0.92
 		};
 
 		const base = this.baseFrictionSlip * (compoundFactor[this.tireCompound] ?? 1.0);
@@ -497,6 +498,27 @@ export class SimpleCar extends THREE.Object3D {
 			this.steeringSimulator.target = THREE.MathUtils.clamp(steering, -maxSteerVal, maxSteerVal);
 		}
 		else this.steeringSimulator.target = 0;
+
+		// Apply physical vibrations when driving on kerbs (Priority 8)
+		let onKerb = false;
+		for (let i = 0; i < this.lastSurfaceByWheel.length; i++) {
+			if (this.lastSurfaceByWheel[i] === 'kerb') {
+				onKerb = true;
+				break;
+			}
+		}
+
+		if (onKerb) {
+			const time = performance.now() * 0.001; // Time in seconds
+			const speedMagnitude = Math.abs(this._speed);
+			if (speedMagnitude > 1.0) {
+				const vibrationFreq = 35; // High frequency in Hz
+				const vibrationAmp = 15.0 * Math.min(speedMagnitude * 0.1, 1.5); // Amplitude proportional to speed, capped
+				const forceY = Math.sin(time * Math.PI * 2 * vibrationFreq) * vibrationAmp;
+				const vibrationForce = Utils.cannonVector(new THREE.Vector3(0, forceY, 0));
+				body.force.vadd(vibrationForce, body.force);
+			}
+		}
 	}
 
 	private updateThrottle(timeStep: number, target: number): void {

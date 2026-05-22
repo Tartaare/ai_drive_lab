@@ -126,9 +126,23 @@
                 <button id="close-settings" class="close-btn">&times;</button>
             </div>
             
-            <button id="proc-regenerate" class="cyber-btn" style="width: 100%; margin-bottom: 2rem; font-size: 0.9rem;">
+            <button id="proc-regenerate" class="cyber-btn" style="width: 100%; margin-bottom: 0.75rem; font-size: 0.9rem;">
                 GENERATE NEW TRACK
             </button>
+            <div id="proc-generation-log" class="track-generation-log" role="status" aria-live="polite" hidden></div>
+
+            <!-- Difficulty Preset Selector -->
+            <div class="slider-group" style="margin-bottom: 2rem;">
+                <div class="slider-label"><span>DIFFICULTY PRESET</span></div>
+                <select id="proc-difficulty" class="cyber-select" style="margin-top: 0.5rem; font-family: var(--font-display); background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                    <option value="facile">EASY</option>
+                    <option value="moyen" selected>MEDIUM</option>
+                    <option value="difficile">HARD</option>
+                    <option value="expert">EXPERT</option>
+                    <option value="vraiment_difficile">NIGHTMARE</option>
+                    <option value="custom" disabled>CUSTOM (MANUAL)</option>
+                </select>
+            </div>
 
             <div class="slider-group">
                 <div class="slider-label"><span>COMPLEXITY</span> <span class="slider-value" id="proc-numControlPoints-value">12</span></div>
@@ -180,9 +194,11 @@
             menuBtn: document.getElementById('back-to-menu'),
             closeSettingsBtn: document.getElementById('close-settings'),
             procRegenBtn: document.getElementById('proc-regenerate'),
+            procGenerationLog: document.getElementById('proc-generation-log'),
             
             // Inputs
             mainLevelSelect: document.getElementById('main-menu-level-select'),
+            difficulty: document.getElementById('proc-difficulty'),
             
             // Telemetry
             speedVal: document.getElementById('speed-value'),
@@ -296,11 +312,37 @@
         });
 
         // --- Procedural Logic ---
-        ui.procRegenBtn.addEventListener('click', () => {
-            if (world && world.randomizeProceduralSeed) {
+        const trackGenerationLogMessage = 'Génération du circuit...';
+
+        function setTrackGenerationPending(isPending) {
+            ui.procRegenBtn.disabled = isPending;
+            ui.procRegenBtn.setAttribute('aria-busy', isPending ? 'true' : 'false');
+            ui.procGenerationLog.hidden = !isPending;
+            ui.procGenerationLog.textContent = isPending ? trackGenerationLogMessage : '';
+        }
+
+        function waitForNextPaint() {
+            return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+
+        ui.procRegenBtn.addEventListener('click', async () => {
+            if (!world || !world.randomizeProceduralSeed || ui.procRegenBtn.disabled) return;
+
+            setTrackGenerationPending(true);
+            await waitForNextPaint();
+
+            try {
                 world.randomizeProceduralSeed();
                 refreshSettingsUI();
+            } finally {
+                setTrackGenerationPending(false);
             }
+        });
+
+        ui.difficulty.addEventListener('change', () => {
+            if (!world || !world.setProceduralDifficulty) return;
+            world.setProceduralDifficulty(ui.difficulty.value);
+            refreshSettingsUI();
         });
 
         function refreshSettingsUI() {
@@ -312,6 +354,11 @@
             updateSlider(ui.sliders.radiusVariation, ui.values.radiusVariation, Math.round(cfg.radiusVariation * 100), '%');
             updateSlider(ui.sliders.angleVariation, ui.values.angleVariation, Math.round(cfg.angleVariation * 100), '%');
             updateSlider(ui.sliders.trackWidth, ui.values.trackWidth, cfg.trackWidth);
+
+            if (world.getProceduralDifficulty) {
+                const diff = world.getProceduralDifficulty();
+                ui.difficulty.value = diff || 'custom';
+            }
         }
 
         function updateSlider(input, display, value, suffix = '') {
@@ -326,6 +373,12 @@
                 const val = parseInt(input.value, 10);
                 world.setProceduralParameter(param, scale === 1 ? val : val / scale);
                 display.textContent = val + suffix;
+
+                // Si un curseur est modifié manuellement, on bascule le preset sur 'custom'
+                if (world.getProceduralDifficulty && world.getProceduralDifficulty() !== 'custom') {
+                    world.currentDifficulty = 'custom';
+                    ui.difficulty.value = 'custom';
+                }
             });
         }
 

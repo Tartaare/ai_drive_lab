@@ -25,6 +25,7 @@ export class World
 	private proceduralTrackData?: TrackData;
 	private proceduralConfig: TrackConfig = { ...defaultTrackConfig };
 	private proceduralSeed: number = Math.floor(Math.random() * 1000000);
+	private currentDifficulty: string = 'moyen';
 	
 	// Physics
 	public physicsWorld: CANNON.World;
@@ -237,8 +238,16 @@ export class World
 			this.car.setSurfaceSampler((x: number, z: number) => this.getSurfaceTypeAt(x, z));
 			// Spawn slightly higher and ensure vehicle is awake and set up
 			const spawnPos = this.getSpawnPosition();
-			if (typeof this.car.reset === 'function') this.car.reset(spawnPos.x, spawnPos.y, spawnPos.z);
-			else this.car.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
+			const spawnRot = this.getSpawnRotation();
+			if (typeof this.car.reset === 'function') {
+				this.car.reset(spawnPos.x, spawnPos.y, spawnPos.z);
+				this.car.collision.quaternion.set(spawnRot.x, spawnRot.y, spawnRot.z, spawnRot.w);
+				this.car.quaternion.copy(spawnRot);
+			} else {
+				this.car.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
+				this.car.collision.quaternion.set(spawnRot.x, spawnRot.y, spawnRot.z, spawnRot.w);
+				this.car.quaternion.copy(spawnRot);
+			}
 			this.car.addToWorld(this.scene, this.physicsWorld);
 			
 			console.log('Car loaded successfully!');
@@ -259,6 +268,7 @@ export class World
 		{
 			const centerPoints = this.proceduralTrackData.centerPoints;
 			let minDistSq = Number.POSITIVE_INFINITY;
+			let nearestIdx = 0;
 
 			for (let i = 0; i < centerPoints.length; i++)
 			{
@@ -266,11 +276,39 @@ export class World
 				const dx = x - p.x;
 				const dz = z - p.z;
 				const d2 = dx * dx + dz * dz;
-				if (d2 < minDistSq) minDistSq = d2;
+				if (d2 < minDistSq) {
+					minDistSq = d2;
+					nearestIdx = i;
+				}
 			}
 
-			const trackHalfWidth = (this.proceduralConfig.trackWidth ?? defaultTrackConfig.trackWidth) * 0.5;
+			const trackWidth = this.proceduralConfig.trackWidth ?? defaultTrackConfig.trackWidth;
+			const trackHalfWidth = trackWidth * 0.5;
 			const dist = Math.sqrt(minDistSq);
+
+			// Check if on a corner Kerb (vibreur)
+			if (this.proceduralTrackData.kerbs && dist >= trackHalfWidth - 0.2 && dist <= trackHalfWidth + 0.8)
+			{
+				const p = centerPoints[nearestIdx];
+				const prev = centerPoints[(nearestIdx - 1 + centerPoints.length) % centerPoints.length];
+				const next = centerPoints[(nearestIdx + 1) % centerPoints.length];
+				
+				const tangent = new THREE.Vector3().subVectors(next, prev).normalize();
+				// CCW left normal points to left border
+				const normal = new THREE.Vector3(-tangent.z, 0, tangent.x);
+				
+				const toPoint = new THREE.Vector3(x - p.x, 0, z - p.z);
+				const isLeft = toPoint.dot(normal) > 0;
+
+				if (isLeft && this.proceduralTrackData.kerbs.left[nearestIdx])
+				{
+					return 'kerb';
+				}
+				if (!isLeft && this.proceduralTrackData.kerbs.right[nearestIdx])
+				{
+					return 'kerb';
+				}
+			}
 
 			if (dist <= trackHalfWidth) return 'asphalt';
 			if (dist <= trackHalfWidth + 2.0) return 'dirt';
@@ -345,7 +383,11 @@ export class World
 			this.track = undefined;
 		}
 
-		const config: TrackConfig = { ...this.proceduralConfig, seed: this.proceduralSeed };
+		const config: TrackConfig = {
+			...this.proceduralConfig,
+			seed: this.proceduralSeed,
+			difficulty: this.currentDifficulty
+		};
 		const trackData = generateTrack(config);
 		this.proceduralTrackData = trackData;
 		const trackObject = createTrackObject(trackData);
@@ -408,6 +450,59 @@ export class World
 		}
 	}
 
+	public setProceduralDifficulty(difficulty: string): void
+	{
+		this.currentDifficulty = difficulty;
+		switch (difficulty)
+		{
+			case 'facile':
+				this.proceduralConfig.numControlPoints = 8;
+				this.proceduralConfig.baseRadius = 50;
+				this.proceduralConfig.radiusVariation = 0.15;
+				this.proceduralConfig.angleVariation = 0.1;
+				this.proceduralConfig.trackWidth = 14;
+				break;
+			case 'moyen':
+				this.proceduralConfig.numControlPoints = 10;
+				this.proceduralConfig.baseRadius = 65;
+				this.proceduralConfig.radiusVariation = 0.30;
+				this.proceduralConfig.angleVariation = 0.25;
+				this.proceduralConfig.trackWidth = 10;
+				break;
+			case 'difficile':
+				this.proceduralConfig.numControlPoints = 12;
+				this.proceduralConfig.baseRadius = 80;
+				this.proceduralConfig.radiusVariation = 0.40;
+				this.proceduralConfig.angleVariation = 0.35;
+				this.proceduralConfig.trackWidth = 8.5;
+				break;
+			case 'expert':
+				this.proceduralConfig.numControlPoints = 14;
+				this.proceduralConfig.baseRadius = 95;
+				this.proceduralConfig.radiusVariation = 0.50;
+				this.proceduralConfig.angleVariation = 0.45;
+				this.proceduralConfig.trackWidth = 7.5;
+				break;
+			case 'vraiment_difficile':
+				this.proceduralConfig.numControlPoints = 16;
+				this.proceduralConfig.baseRadius = 110;
+				this.proceduralConfig.radiusVariation = 0.60;
+				this.proceduralConfig.angleVariation = 0.55;
+				this.proceduralConfig.trackWidth = 6.5;
+				break;
+		}
+
+		if (this.currentLevelId === 'procedural')
+		{
+			this.buildProceduralTrack();
+		}
+	}
+
+	public getProceduralDifficulty(): string
+	{
+		return this.currentDifficulty;
+	}
+
 	public getProceduralConfig(): {
 		numControlPoints: number;
 		baseRadius: number;
@@ -437,6 +532,23 @@ export class World
 
 		// Position par défaut (ancien comportement)
 		return new THREE.Vector3(0, 2, 0);
+	}
+
+	private getSpawnRotation(): THREE.Quaternion
+	{
+		if (this.currentLevelId === 'procedural' && this.proceduralTrackData)
+		{
+			const index = this.proceduralTrackData.startLineIndex || 0;
+			const centerPoints = this.proceduralTrackData.centerPoints;
+			const p1 = centerPoints[index];
+			const p2 = centerPoints[(index + 1) % centerPoints.length];
+			const tangent = new THREE.Vector3().subVectors(p2, p1).normalize();
+
+			// yaw angle around Y axis
+			const yaw = Math.atan2(tangent.x, tangent.z);
+			return new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+		}
+		return new THREE.Quaternion(0, 0, 0, 1);
 	}
 
 	private setupEventListeners(): void
@@ -580,13 +692,17 @@ export class World
 		// Reset car with R key
 		if (event.code === 'KeyR' && pressed) {
 			const spawnPos = this.getSpawnPosition();
+			const spawnRot = this.getSpawnRotation();
 			if (this.car.reset) {
 				this.car.reset(spawnPos.x, spawnPos.y, spawnPos.z);
+				this.car.collision.quaternion.set(spawnRot.x, spawnRot.y, spawnRot.z, spawnRot.w);
+				this.car.quaternion.copy(spawnRot);
 			} else {
 				this.car.setPosition(spawnPos.x, spawnPos.y, spawnPos.z);
 				this.car.collision.velocity.set(0, 0, 0);
 				this.car.collision.angularVelocity.set(0, 0, 0);
-				this.car.collision.quaternion.set(0, 0, 0, 1);
+				this.car.collision.quaternion.set(spawnRot.x, spawnRot.y, spawnRot.z, spawnRot.w);
+				this.car.quaternion.copy(spawnRot);
 				if (typeof this.car.collision.wakeUp === 'function') this.car.collision.wakeUp();
 			}
 
