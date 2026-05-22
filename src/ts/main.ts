@@ -4,7 +4,7 @@ import { SimpleCar, SurfaceType } from './vehicles/SimpleCar';
 import { VehicleSetup } from './vehicles/VehicleSetup';
 import { Sky } from './world/Sky';
 import { DayNightCycle } from './world/DayNightCycle';
-import { generateTrack, defaultTrackConfig, createTrackObject, TrackData, TrackConfig } from './world/ProceduralTrack';
+import { generateTrack, defaultTrackConfig, createTrackObject, TrackData, TrackConfig, KERB_WIDTH_METERS } from './world/ProceduralTrack';
 
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -26,6 +26,7 @@ export class World
 	private proceduralConfig: TrackConfig = { ...defaultTrackConfig };
 	private proceduralSeed: number = Math.floor(Math.random() * 1000000);
 	private currentDifficulty: string = 'moyen';
+	private proceduralKerbBodies: CANNON.Body[] = [];
 	
 	// Physics
 	public physicsWorld: CANNON.World;
@@ -221,6 +222,8 @@ export class World
 		groundBody.addShape(groundShape);
 		groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
 		this.physicsWorld.addBody(groundBody);
+
+		if (this.proceduralTrackData) this.rebuildProceduralKerbCollisions(this.proceduralTrackData);
 	}
 
 	private loadCar(path: string): void
@@ -356,6 +359,7 @@ export class World
 	public setLevel(levelId: string): void
 	{
 		this.currentLevelId = levelId;
+		this.clearProceduralKerbCollisions();
 
 		if (this.track)
 		{
@@ -393,6 +397,81 @@ export class World
 		const trackObject = createTrackObject(trackData);
 		this.track = trackObject;
 		this.scene.add(trackObject);
+		this.rebuildProceduralKerbCollisions(trackData);
+	}
+
+	private clearProceduralKerbCollisions(): void
+	{
+		if (!this.physicsWorld || this.proceduralKerbBodies.length === 0) {
+			this.proceduralKerbBodies = [];
+			return;
+		}
+
+		for (const body of this.proceduralKerbBodies) {
+			this.physicsWorld.removeBody(body);
+		}
+		this.proceduralKerbBodies = [];
+	}
+
+	private rebuildProceduralKerbCollisions(trackData: TrackData): void
+	{
+		this.clearProceduralKerbCollisions();
+		if (!this.physicsWorld || !trackData.kerbs) return;
+
+		const leftBody = this.createKerbCollisionBody(trackData.leftBorder, trackData.centerPoints, trackData.kerbs.left);
+		const rightBody = this.createKerbCollisionBody(trackData.rightBorder, trackData.centerPoints, trackData.kerbs.right);
+
+		for (const body of [leftBody, rightBody]) {
+			if (!body) continue;
+			this.physicsWorld.addBody(body);
+			this.proceduralKerbBodies.push(body);
+		}
+	}
+
+	private createKerbCollisionBody(
+		borderPoints: THREE.Vector3[],
+		centerPoints: THREE.Vector3[],
+		kerbFlags: boolean[]
+	): CANNON.Body | null
+	{
+		const vertices: number[] = [];
+		const indices: number[] = [];
+		const n = borderPoints.length;
+		let vertexIndex = 0;
+
+		for (let i = 0; i < n; i++) {
+			const nextI = (i + 1) % n;
+			if (!kerbFlags[i] && !kerbFlags[nextI]) continue;
+
+			const p1 = borderPoints[i];
+			const p2 = borderPoints[nextI];
+			const c1 = centerPoints[i];
+			const c2 = centerPoints[nextI];
+			const norm1 = new THREE.Vector3().subVectors(p1, c1).normalize();
+			const norm2 = new THREE.Vector3().subVectors(p2, c2).normalize();
+
+			const a1 = p1.clone().add(new THREE.Vector3(0, 0.04, 0));
+			const b1 = p1.clone().addScaledVector(norm1, KERB_WIDTH_METERS * 0.45).add(new THREE.Vector3(0, 0.08, 0));
+			const cTail1 = p1.clone().addScaledVector(norm1, KERB_WIDTH_METERS).add(new THREE.Vector3(0, 0.01, 0));
+			const a2 = p2.clone().add(new THREE.Vector3(0, 0.04, 0));
+			const b2 = p2.clone().addScaledVector(norm2, KERB_WIDTH_METERS * 0.45).add(new THREE.Vector3(0, 0.08, 0));
+			const cTail2 = p2.clone().addScaledVector(norm2, KERB_WIDTH_METERS).add(new THREE.Vector3(0, 0.01, 0));
+
+			vertices.push(a1.x, a1.y, a1.z, b1.x, b1.y, b1.z, cTail1.x, cTail1.y, cTail1.z);
+			vertices.push(a2.x, a2.y, a2.z, b2.x, b2.y, b2.z, cTail2.x, cTail2.y, cTail2.z);
+			indices.push(vertexIndex + 0, vertexIndex + 3, vertexIndex + 1);
+			indices.push(vertexIndex + 1, vertexIndex + 3, vertexIndex + 4);
+			indices.push(vertexIndex + 1, vertexIndex + 4, vertexIndex + 2);
+			indices.push(vertexIndex + 2, vertexIndex + 4, vertexIndex + 5);
+			vertexIndex += 6;
+		}
+
+		if (vertices.length === 0) return null;
+
+		const shape = new (CANNON as any).Trimesh(vertices, indices);
+		const body = new CANNON.Body({ mass: 0 });
+		body.addShape(shape);
+		return body;
 	}
 
 	public regenerateProceduralTrack(): void

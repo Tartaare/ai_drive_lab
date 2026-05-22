@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+export const KERB_WIDTH_METERS = 0.8;
+export const TRACK_EDGE_LINE_WIDTH_METERS = 0.18;
+
 export type RejectionReason =
     | 'too_short'
     | 'too_long'
@@ -1037,6 +1040,44 @@ export const defaultTrackConfig: TrackConfig = {
     sampleCount: 250
 };
 
+function buildEdgeLineGeometry(
+    borderPoints: THREE.Vector3[],
+    centerPoints: THREE.Vector3[],
+    lineWidth: number
+): THREE.BufferGeometry {
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const n = borderPoints.length;
+
+    for (let i = 0; i < n; i++) {
+        const border = borderPoints[i];
+        const center = centerPoints[i];
+        const inward = new THREE.Vector3().subVectors(center, border).normalize();
+        const inner = border.clone().addScaledVector(inward, lineWidth);
+
+        vertices.push(border.x, border.y + 0.035, border.z);
+        vertices.push(inner.x, inner.y + 0.035, inner.z);
+    }
+
+    for (let i = 0; i < n; i++) {
+        const nextI = (i + 1) % n;
+        const outerA = i * 2;
+        const innerA = i * 2 + 1;
+        const outerB = nextI * 2;
+        const innerB = nextI * 2 + 1;
+
+        indices.push(outerA, outerB, innerA);
+        indices.push(innerA, outerB, innerB);
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+
+    return geometry;
+}
+
 // --- Beautiful beveled 3D Kerbs Generator ---
 function buildKerbGeometry(
     borderPoints: THREE.Vector3[],
@@ -1064,19 +1105,17 @@ function buildKerbGeometry(
         const norm1 = new THREE.Vector3().subVectors(p1, c1).normalize();
         const norm2 = new THREE.Vector3().subVectors(p2, c2).normalize();
 
-        const kerbWidth = 0.8;
-
         // Beveled 3D profile:
         // A: Inside edge (at road border) raised slightly by 0.04m
         // B: Center crest (raised by 0.08m)
         // C: Outside tail (flat on grass, 0.01m elevation)
         const a1 = p1.clone().add(new THREE.Vector3(0, 0.04, 0));
-        const b1 = p1.clone().addScaledVector(norm1, kerbWidth * 0.45).add(new THREE.Vector3(0, 0.08, 0));
-        const c_coord1 = p1.clone().addScaledVector(norm1, kerbWidth).add(new THREE.Vector3(0, 0.01, 0));
+        const b1 = p1.clone().addScaledVector(norm1, KERB_WIDTH_METERS * 0.45).add(new THREE.Vector3(0, 0.08, 0));
+        const c_coord1 = p1.clone().addScaledVector(norm1, KERB_WIDTH_METERS).add(new THREE.Vector3(0, 0.01, 0));
 
         const a2 = p2.clone().add(new THREE.Vector3(0, 0.04, 0));
-        const b2 = p2.clone().addScaledVector(norm2, kerbWidth * 0.45).add(new THREE.Vector3(0, 0.08, 0));
-        const c_coord2 = p2.clone().addScaledVector(norm2, kerbWidth).add(new THREE.Vector3(0, 0.01, 0));
+        const b2 = p2.clone().addScaledVector(norm2, KERB_WIDTH_METERS * 0.45).add(new THREE.Vector3(0, 0.08, 0));
+        const c_coord2 = p2.clone().addScaledVector(norm2, KERB_WIDTH_METERS).add(new THREE.Vector3(0, 0.01, 0));
 
         vertices.push(a1.x, a1.y, a1.z); // vertexIndex
         vertices.push(b1.x, b1.y, b1.z); // vertexIndex + 1
@@ -1196,29 +1235,28 @@ export function createTrackObject(trackData: TrackData): THREE.Group {
         }
     }
 
-    const borderMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const edgeLineMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        roughness: 0.55,
+        metalness: 0.05
+    });
     const centerMaterial = new THREE.LineBasicMaterial({ color: 0xaaaa00 }); // Slightly desaturated yellow
     const startMaterial = new THREE.LineBasicMaterial({ color: 0xff3b30 });  // iOS iOS-danger red
 
-    const leftBorderGeometry = new THREE.BufferGeometry();
-    const leftBorderPoints: number[] = [];
-    for (let i = 0; i <= n; i++) {
-        const p = trackData.leftBorder[i % n];
-        leftBorderPoints.push(p.x, p.y + 0.03, p.z); // Closer to road to avoid height discrepancies
-    }
-    leftBorderGeometry.setAttribute('position', new THREE.Float32BufferAttribute(leftBorderPoints, 3));
-    const leftLine = new THREE.Line(leftBorderGeometry, borderMaterial);
-    group.add(leftLine);
+    const leftLineMesh = new THREE.Mesh(
+        buildEdgeLineGeometry(trackData.leftBorder, trackData.centerPoints, TRACK_EDGE_LINE_WIDTH_METERS),
+        edgeLineMaterial
+    );
+    leftLineMesh.receiveShadow = true;
+    group.add(leftLineMesh);
 
-    const rightBorderGeometry = new THREE.BufferGeometry();
-    const rightBorderPoints: number[] = [];
-    for (let i = 0; i <= n; i++) {
-        const p = trackData.rightBorder[i % n];
-        rightBorderPoints.push(p.x, p.y + 0.03, p.z);
-    }
-    rightBorderGeometry.setAttribute('position', new THREE.Float32BufferAttribute(rightBorderPoints, 3));
-    const rightLine = new THREE.Line(rightBorderGeometry, borderMaterial);
-    group.add(rightLine);
+    const rightLineMesh = new THREE.Mesh(
+        buildEdgeLineGeometry(trackData.rightBorder, trackData.centerPoints, TRACK_EDGE_LINE_WIDTH_METERS),
+        edgeLineMaterial
+    );
+    rightLineMesh.receiveShadow = true;
+    group.add(rightLineMesh);
 
     const centerGeometry = new THREE.BufferGeometry();
     const centerPoints: number[] = [];

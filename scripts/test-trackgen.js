@@ -91,6 +91,15 @@ function validateGeneratedTrack(testCase, trackData) {
     }
 }
 
+function validateTrackRenderingConstants(moduleExports) {
+    const kerbWidth = moduleExports.KERB_WIDTH_METERS;
+    const edgeLineWidth = moduleExports.TRACK_EDGE_LINE_WIDTH_METERS;
+
+    assert(Number.isFinite(kerbWidth) && kerbWidth > 0, 'rendering constants: invalid kerb width');
+    assert(Number.isFinite(edgeLineWidth) && edgeLineWidth > 0, 'rendering constants: invalid edge line width');
+    assert(edgeLineWidth < kerbWidth, 'rendering constants: edge line width must stay thinner than kerbs');
+}
+
 function boundaryCases(defaultTrackConfig) {
     const keys = Object.keys(UI_RANGES);
     const cases = [];
@@ -242,7 +251,10 @@ function summarize(results) {
 }
 
 function run() {
-    const { generateTrack, defaultTrackConfig } = loadTrackModule();
+    const trackModule = loadTrackModule();
+    const { generateTrack, defaultTrackConfig } = trackModule;
+    validateTrackRenderingConstants(trackModule);
+
     const cases = [
         ...presetCases(defaultTrackConfig),
         ...boundaryCases(defaultTrackConfig),
