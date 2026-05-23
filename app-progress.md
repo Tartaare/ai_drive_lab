@@ -1,3 +1,36 @@
+# SPRINT showroom-main-menu — Refonte menu showroom automobile
+
+# Date : 2026-05-23
+
+# Statut : termine
+
+# Composants :
+- `index.html`
+- `src/css/style.css`
+- `src/ts/main.ts`
+- `src/ts/ui/menu/catalog.ts`
+- `src/ts/ui/menu/MainMenuController.ts`
+- `src/ts/ui/menu/VehiclePreview.ts`
+- `src/ts/ui/menu/ProceduralTrackPreview.ts`
+- `src/ts/ui/menu/renderers.ts`
+
+# Validation :
+- Menu principal refondu en showroom automobile : marque discrete, modes a gauche, preview vehicule 3D dominante, circuit a droite, CTA `START ENGINE` en bas centre.
+- Carousel vehicule avec stats extensibles, navigation gauche/droite, rotation automatique et drag pointer.
+- Preview procedurale top-down avec longueur, difficulte, seed et action `New Track`.
+- Mode `AI` indisponible et mode `Contre la montre` desactive tant que `race_tracks/Cartoon_Track1.glb` est absent.
+- Selection vehicule/mode/circuit restauree via IndexedDB et sauvegardee avec le vrai `vehicleId`.
+- `World` accepte une configuration procedurale optionnelle tout en conservant le contrat existant `World(carModelPath, levelId)`.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+- `npx tsc --noEmit` : toujours bloque par incompatibilite existante entre `typescript@3.9.9` et les definitions recentes `@types/node` / `undici-types`.
+- Dev server local `http://127.0.0.1:5173/` : reponse HTTP `200`, markup showroom present, bundle `200`, asset Grand Prix absent confirme en `404`.
+
+# Risques restants :
+- La validation visuelle navigateur integree n'a pas pu etre pilotee dans cette session car l'outil Browser n'exposait pas de runtime `node_repl js`; une verification manuelle desktop/mobile reste recommandee.
+- Les previews GLB dependent des assets `car_models/`; le fallback showroom couvre l'echec de chargement mais ne remplace pas une validation visuelle modele par modele.
+- Les modules `MainMenuController.ts` et `VehiclePreview.ts` restent legerement au-dessus de 200 lignes pour conserver des responsabilites coherentes sans sur-fragmentation.
+
 # SPRINT persistence-indexeddb — Persistance locale des données avec IndexedDB
 
 # Date : 2026-05-23
