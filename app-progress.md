@@ -1,3 +1,34 @@
+# SPRINT modular-track-architecture — Découpe piste procédurale
+
+# Date : 2026-05-23
+
+# Statut : termine
+
+# Composants :
+- `src/ts/world/ProceduralTrack.ts`
+- `src/ts/world/track/trackTypes.ts`
+- `src/ts/world/track/trackSpatial.ts`
+- `src/ts/world/track/trackControlPoints.ts`
+- `src/ts/world/track/trackCurvature.ts`
+- `src/ts/world/track/trackValidation.ts`
+- `src/ts/world/track/trackGeneration.ts`
+- `src/ts/world/track/trackGeometry.ts`
+- `src/ts/world/track/trackKerbs.ts`
+- `scripts/test-trackgen.js`
+- `README.md`
+
+# Validation :
+- `ProceduralTrack.ts` passe de `1284` lignes à une façade de `13` lignes pour préserver les imports existants.
+- Les modules extraits restent sous `250` lignes : génération `244`, géométrie `198`, spatial `196`, validation `196`, control points `181`, courbure `147`, kerbs `79`, types `67`.
+- Le runner `test-trackgen` charge maintenant récursivement les modules TypeScript locaux au lieu de transpiler seulement la façade.
+- `npm run build` : succès.
+- `npm run test:trackgen` : succès sur `406` cas.
+- `npx tsc --noEmit` : toujours bloqué par incompatibilité existante entre `typescript@3.9.9` et les définitions récentes `@types/node` / `undici-types`.
+
+# Risques restants :
+- Le comportement de génération est validé par la matrice déterministe actuelle, mais une validation visuelle navigateur reste recommandée pour confirmer le rendu des kerbs et lignes de bord après découpe.
+- Les autres gros fichiers (`SimpleCar.ts`, `main.ts`, `style.css`, `index.html`) restent à modulariser dans des sprints séparés pour limiter le risque de régression.
+
 # SPRINT theme-toggle-ux — Theme clair/sombre menu principal
 
 # Date : 2026-05-23
