@@ -220,6 +220,14 @@
                         id="proc-trackWidth-value">10</span></div>
                 <input id="proc-trackWidth" type="range" min="5" max="30" step="1" value="10">
             </div>
+
+            <!-- Saved Circuits -->
+            <div class="settings-section-divider"></div>
+            <div class="slider-label" style="margin-bottom: 0.75rem;">SAVED CIRCUITS <span id="fav-count" class="fav-count">0/10</span></div>
+            <button id="fav-save-btn" class="cyber-btn fav-save-btn" type="button">
+                &#9733; SAVE THIS CIRCUIT
+            </button>
+            <div id="fav-list" class="fav-list" aria-live="polite"></div>
         </div>
 
     </div>
@@ -277,6 +285,13 @@
             }
         };
 
+        // Favorites UI refs
+        const favUI = {
+            saveBtn: document.getElementById('fav-save-btn'),
+            list: document.getElementById('fav-list'),
+            count: document.getElementById('fav-count')
+        };
+
         const themeStorageKey = 'apex-theme';
 
         function getActiveTheme() {
@@ -308,6 +323,36 @@
                 ui.loading.classList.add('hidden');
                 ui.mainMenu.classList.remove('hidden');
             }, 1200);
+
+            // Restore persisted preferences
+            const AS = SimpleCar.AppStorage;
+            if (AS) {
+                AS.getPrefs().then(function(prefs) {
+                    if (!prefs) return;
+                    if (prefs.levelId && ui.mainLevelSelect) {
+                        ui.mainLevelSelect.value = prefs.levelId;
+                    }
+                }).catch(function() {});
+
+                AS.getTrackConfig().then(function(cfg) {
+                    if (!cfg) return;
+                    if (ui.sliders.numControlPoints) ui.sliders.numControlPoints.value = cfg.numControlPoints;
+                    if (ui.values.numControlPoints) ui.values.numControlPoints.textContent = cfg.numControlPoints;
+                    if (ui.sliders.baseRadius) ui.sliders.baseRadius.value = cfg.baseRadius;
+                    if (ui.values.baseRadius) ui.values.baseRadius.textContent = cfg.baseRadius;
+                    var rv = Math.round(cfg.radiusVariation * 100);
+                    if (ui.sliders.radiusVariation) ui.sliders.radiusVariation.value = rv;
+                    if (ui.values.radiusVariation) ui.values.radiusVariation.textContent = rv + '%';
+                    var av = Math.round(cfg.angleVariation * 100);
+                    if (ui.sliders.angleVariation) ui.sliders.angleVariation.value = av;
+                    if (ui.values.angleVariation) ui.values.angleVariation.textContent = av + '%';
+                    if (ui.sliders.trackWidth) ui.sliders.trackWidth.value = cfg.trackWidth;
+                    if (ui.values.trackWidth) ui.values.trackWidth.textContent = cfg.trackWidth;
+                    if (ui.difficulty && cfg.difficulty) ui.difficulty.value = cfg.difficulty;
+                }).catch(function() {});
+
+                renderFavorites();
+            }
         });
 
         // --- Game Flow ---
@@ -322,6 +367,15 @@
 
             // Create World
             world = new SimpleCar.World('car_models/car_blue.glb', level);
+
+            // Persist user preferences
+            var AS = SimpleCar.AppStorage;
+            if (AS) {
+                AS.savePrefs({ vehicleId: 'car_blue', levelId: level, theme: getActiveTheme() }).catch(function() {});
+            }
+
+            // Track session start
+            window._sessionStart = Date.now();
 
             // Transitions
             ui.mainMenu.classList.add('hidden');
@@ -340,6 +394,26 @@
         }
 
         function stopGame() {
+            var AS = SimpleCar.AppStorage;
+            if (AS && gameStarted) {
+                var dur = window._sessionStart ? Date.now() - window._sessionStart : 0;
+                var lvl = ui.mainLevelSelect ? ui.mainLevelSelect.value : 'default';
+                AS.saveSession({ circuitId: lvl, vehicleId: 'car_blue', durationMs: dur, bestLapMs: null, date: Date.now() }).catch(function() {});
+                if (world && world.getProceduralConfig) {
+                    var cfg = world.getProceduralConfig();
+                    var diff = world.getProceduralDifficulty ? world.getProceduralDifficulty() : 'moyen';
+                    var seed = world.proceduralSeed || 0;
+                    AS.saveTrackConfig({
+                        difficulty: diff,
+                        numControlPoints: cfg.numControlPoints,
+                        baseRadius: cfg.baseRadius,
+                        radiusVariation: cfg.radiusVariation,
+                        angleVariation: cfg.angleVariation,
+                        trackWidth: cfg.trackWidth,
+                        seed: seed
+                    }).catch(function() {});
+                }
+            }
             if (world && world.dispose) world.dispose();
             world = null;
             gameStarted = false;
@@ -423,6 +497,7 @@
             if (!world || !world.setProceduralDifficulty) return;
             world.setProceduralDifficulty(ui.difficulty.value);
             refreshSettingsUI();
+            persistTrackConfig();
         });
 
         function refreshSettingsUI() {
@@ -459,6 +534,7 @@
                     world.currentDifficulty = 'custom';
                     ui.difficulty.value = 'custom';
                 }
+                persistTrackConfig();
             });
         }
 
@@ -467,6 +543,116 @@
         bindProcSlider(ui.sliders.radiusVariation, ui.values.radiusVariation, 'radiusVariation', 100, '%');
         bindProcSlider(ui.sliders.angleVariation, ui.values.angleVariation, 'angleVariation', 100, '%');
         bindProcSlider(ui.sliders.trackWidth, ui.values.trackWidth, 'trackWidth');
+
+        // --- Persist helpers ---
+        var _persistTimer = null;
+        function persistTrackConfig() {
+            clearTimeout(_persistTimer);
+            _persistTimer = setTimeout(function() {
+                var AS = SimpleCar.AppStorage;
+                if (!AS || !world || !world.getProceduralConfig) return;
+                var cfg = world.getProceduralConfig();
+                var diff = world.getProceduralDifficulty ? world.getProceduralDifficulty() : 'moyen';
+                var seed = world.proceduralSeed || 0;
+                AS.saveTrackConfig({
+                    difficulty: diff,
+                    numControlPoints: cfg.numControlPoints,
+                    baseRadius: cfg.baseRadius,
+                    radiusVariation: cfg.radiusVariation,
+                    angleVariation: cfg.angleVariation,
+                    trackWidth: cfg.trackWidth,
+                    seed: seed
+                }).catch(function() {});
+            }, 300);
+        }
+
+        // --- Favorites Logic ---
+        var MAX_FAVORITES = 10;
+
+        function renderFavorites() {
+            var AS = SimpleCar.AppStorage;
+            if (!AS || !favUI.list) return;
+            AS.getFavorites().then(function(items) {
+                favUI.list.innerHTML = '';
+                var count = items ? items.length : 0;
+                if (favUI.count) favUI.count.textContent = count + '/' + MAX_FAVORITES;
+                if (favUI.saveBtn) favUI.saveBtn.disabled = (count >= MAX_FAVORITES);
+                if (!items || items.length === 0) {
+                    favUI.list.innerHTML = '<div class="fav-empty">No saved circuits yet.</div>';
+                    return;
+                }
+                items.forEach(function(item) {
+                    var el = document.createElement('div');
+                    el.className = 'fav-item';
+                    var d = new Date(item.createdAt);
+                    var dateStr = d.getMonth()+1 + '/' + d.getDate();
+                    el.innerHTML =
+                        '<span class="fav-item__name">' + item.name + '</span>' +
+                        '<span class="fav-item__meta">' + (item.difficulty || '').toUpperCase() + '</span>' +
+                        '<button class="fav-item__btn" data-action="load" data-id="' + item.id + '">LOAD</button>' +
+                        '<button class="fav-item__btn fav-item__btn--delete" data-action="del" data-id="' + item.id + '">&#10005;</button>';
+                    favUI.list.appendChild(el);
+                });
+            }).catch(function() {});
+        }
+
+        if (favUI.list) {
+            favUI.list.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                var id = parseInt(btn.dataset.id, 10);
+                var action = btn.dataset.action;
+                var AS = SimpleCar.AppStorage;
+                if (!AS) return;
+                if (action === 'del') {
+                    AS.deleteCircuit(id).then(function() { renderFavorites(); }).catch(function() {});
+                } else if (action === 'load') {
+                    AS.getFavorites().then(function(items) {
+                        var item = items.find(function(i) { return i.id === id; });
+                        if (!item || !world || !world.setProceduralParameter) return;
+                        var cfg = item.config;
+                        world.setProceduralParameter('numControlPoints', cfg.numControlPoints);
+                        world.setProceduralParameter('baseRadius', cfg.baseRadius);
+                        world.setProceduralParameter('radiusVariation', cfg.radiusVariation);
+                        world.setProceduralParameter('angleVariation', cfg.angleVariation);
+                        world.setProceduralParameter('trackWidth', cfg.trackWidth);
+                        if (world.setProceduralDifficulty) world.setProceduralDifficulty(cfg.difficulty);
+                        if (world.proceduralSeed !== undefined) world.proceduralSeed = cfg.seed;
+                        if (world.buildProceduralTrack) world.buildProceduralTrack();
+                        refreshSettingsUI();
+                    }).catch(function() {});
+                }
+            });
+        }
+
+        if (favUI.saveBtn) {
+            favUI.saveBtn.addEventListener('click', function() {
+                var AS = SimpleCar.AppStorage;
+                if (!AS || !world || !world.getProceduralConfig) return;
+                var cfg = world.getProceduralConfig();
+                var diff = world.getProceduralDifficulty ? world.getProceduralDifficulty() : 'moyen';
+                var seed = world.proceduralSeed || 0;
+                AS.getFavorites().then(function(items) {
+                    var n = items ? items.length + 1 : 1;
+                    var name = 'CIRCUIT #' + n + ' — ' + diff.toUpperCase();
+                    return AS.saveCircuit({
+                        name: name,
+                        seed: seed,
+                        difficulty: diff,
+                        config: {
+                            difficulty: diff,
+                            numControlPoints: cfg.numControlPoints,
+                            baseRadius: cfg.baseRadius,
+                            radiusVariation: cfg.radiusVariation,
+                            angleVariation: cfg.angleVariation,
+                            trackWidth: cfg.trackWidth,
+                            seed: seed
+                        },
+                        createdAt: Date.now()
+                    });
+                }).then(function() { renderFavorites(); }).catch(function() {});
+            });
+        }
 
         // --- Telemetry Loop & RPM Animation ---
         let MAX_RPM_OFFSET = 0;

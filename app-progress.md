@@ -1,3 +1,28 @@
+# SPRINT persistence-indexeddb — Persistance locale des données avec IndexedDB
+
+# Date : 2026-05-23
+
+# Statut : termine
+
+# Composants :
+- `src/ts/core/AppStorage.ts`
+- `src/ts/main.ts`
+- `index.html`
+- `src/css/style.css`
+- `package.json`
+
+# Validation :
+- Intégration complète de la bibliothèque `idb` pour encapsuler l'asynchronisme de IndexedDB de manière moderne et typée.
+- Création du singleton `AppStorage` gérant 4 magasins d'objets distincts : préférences utilisateur (véhicule/niveau/thème), configuration de circuit procédural (sliders), circuits favoris (sauvegarde de graine et paramètres avec nom automatique), et historique des sessions (chronos/durée de conduite).
+- Intégration asynchrone transparente au chargement de `index.html` (sans freeze visuel).
+- Autosave avec anti-rebond (debounce) de 300ms sur la configuration des curseurs de piste.
+- Interface utilisateur dédiée aux favoris intégrée au volet "Track Configuration" (jusqu'à 10 circuits max, boutons Load et Supprimer interactifs).
+- `npm run build` : succès.
+- `npm run test:trackgen` : succès (406/406 PASS).
+
+# Risques restants :
+- L'utilisation de IndexedDB n'affecte pas le rendu 3D, mais l'état asynchrone initial de chargement doit être géré avec soin si la scène 3D démarre avant la fin de la restauration des données (actuellement résolu par le délai de chargement initial de 1.2s).
+
 # SPRINT modular-track-architecture — Découpe piste procédurale
 
 # Date : 2026-05-23

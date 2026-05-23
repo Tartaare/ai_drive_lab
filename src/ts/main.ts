@@ -912,3 +912,4 @@ export class World
 
 // Export for external use
 export { SimpleCar } from './vehicles/SimpleCar';
+export * as AppStorage from './core/AppStorage';
