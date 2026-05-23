@@ -14,6 +14,7 @@ APEX est une simulation de conduite 3D immersive concue comme une experience coc
 
 ### Caracteristiques principales
 
+- **Showroom automobile** -- Menu principal avec preview vehicule 3D et circuit top-down
 - **Conduite physique** -- Simulation Cannon.js avec vehicule realiste
 - **Circuits proceduraux** -- Generation infinie avec parametres configurables
 - **Design System APEX** -- Interface cockpit motorsport, dark-first
@@ -77,6 +78,12 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 │   │   │       └── trackSpatial.ts     # Helpers spatiaux
 │   │   ├── vehicles/        # Vehicule, roues, modeles
 │   │   └── ui/              # Composants interface
+│   │       └── menu/        # Menu showroom automobile
+│   │           ├── MainMenuController.ts    # Controller menu principal
+│   │           ├── VehiclePreview.ts        # Preview vehicule 3D
+│   │           ├── ProceduralTrackPreview.ts # Preview circuit top-down
+│   │           ├── catalog.ts               # Catalogue vehicules
+│   │           └── renderers.ts             # Renderers UI
 │   └── lib/                 # Librairies tierces (Cannon.js, shaders)
 ├── scripts/
 │   └── test-trackgen.js     # Suite de tests deterministes (406 cas)
@@ -183,6 +190,7 @@ Couverture actuelle :
 
 ## Roadmap
 
+- [x] Showroom automobile avec previews 3D (vehicule + circuit)
 - [x] Architecture modulaire piste procedurale
 - [x] Persistance IndexedDB avec 4 magasins
 - [x] Theme clair/sombre avec toggle accessible
@@ -201,6 +209,7 @@ Les sprints realises sont documentes dans `app-progress.md` :
 
 | Sprint | Date | Focus |
 |--------|------|-------|
+| showroom-main-menu | 2026-05-23 | Refonte menu showroom automobile avec previews 3D |
 | persistence-indexeddb | 2026-05-23 | Persistance locale via IndexedDB |
 | modular-track-architecture | 2026-05-23 | Decoupage modulaire piste (1284 -> 13 lignes facade) |
 | theme-toggle-ux | 2026-05-23 | Theme clair/sombre accessible |
