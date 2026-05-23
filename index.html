@@ -4,7 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark light">
     <title>APEX - Next Gen Racing</title>
+    <script>
+        (() => {
+            const storageKey = 'apex-theme';
+            const systemTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            let savedTheme = null;
+
+            try {
+                savedTheme = window.localStorage.getItem(storageKey);
+            } catch {
+                savedTheme = null;
+            }
+
+            const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : systemTheme;
+
+            document.documentElement.dataset.theme = theme;
+        })();
+    </script>
     <link rel="stylesheet" href="src/css/style.css">
 </head>
 
@@ -24,7 +42,7 @@
         </div>
 
         <!-- Settings Toggle (In-Game) -->
-        <button id="toggle-settings" class="settings-toggle hidden">
+        <button id="toggle-settings" class="settings-toggle hidden" type="button" aria-label="Ouvrir la configuration de piste">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
                 <path
@@ -34,6 +52,25 @@
 
         <!-- Main Menu -->
         <div id="main-menu" class="menu-overlay hidden">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Activer le thème clair"
+                aria-pressed="false">
+                <span class="theme-toggle__track" aria-hidden="true">
+                    <span class="theme-toggle__orb">
+                        <svg class="theme-toggle__icon theme-toggle__icon--sun" width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round">
+                            <circle cx="12" cy="12" r="4" />
+                            <path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.4 1.4M17.6 17.6 19 19M19 5l-1.4 1.4M6.4 17.6 5 19" />
+                        </svg>
+                        <svg class="theme-toggle__icon theme-toggle__icon--moon" width="14" height="14"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 14.7A8 8 0 0 1 9.3 4 8 8 0 1 0 20 14.7Z" />
+                        </svg>
+                    </span>
+                </span>
+            </button>
+
             <div class="title-container">
                 <div class="main-title">APEX</div>
                 <div class="subtitle">PHYSICS DRIVING SIMULATION</div>
@@ -91,7 +128,7 @@
             </div>
 
             <div id="rpm-debug"
-                style="position:absolute; bottom: 18px; left: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; color: rgba(255,255,255,0.75); pointer-events: none; user-select: none;">
+                style="position:absolute; bottom: 18px; left: 18px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; color: var(--c-text-soft); pointer-events: none; user-select: none;">
                 RPM: 0
             </div>
         </div>
@@ -144,7 +181,7 @@
             <div class="slider-group" style="margin-bottom: 2rem;">
                 <div class="slider-label"><span>DIFFICULTY PRESET</span></div>
                 <select id="proc-difficulty" class="cyber-select"
-                    style="margin-top: 0.5rem; font-family: var(--font-display); background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                    style="margin-top: 0.5rem; font-family: var(--font-display); background: var(--c-bg-glass); border: 1px solid var(--c-border-subtle); padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
                     <option value="facile">EASY</option>
                     <option value="moyen" selected>MEDIUM</option>
                     <option value="difficile">HARD</option>
@@ -202,6 +239,7 @@
             controlsHint: document.getElementById('controls-hint'),
             settingsToggle: document.getElementById('toggle-settings'),
             settingsPanel: document.getElementById('settings-panel'),
+            themeToggle: document.getElementById('theme-toggle'),
 
             // Interactive
             startBtn: document.getElementById('start-game'),
@@ -238,6 +276,30 @@
                 trackWidth: document.getElementById('proc-trackWidth-value')
             }
         };
+
+        const themeStorageKey = 'apex-theme';
+
+        function getActiveTheme() {
+            return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+        }
+
+        function setTheme(theme, persist = true) {
+            const nextTheme = theme === 'light' ? 'light' : 'dark';
+            const isLight = nextTheme === 'light';
+
+            document.documentElement.dataset.theme = nextTheme;
+            if (persist) {
+                try {
+                    window.localStorage.setItem(themeStorageKey, nextTheme);
+                } catch {
+                    // Theme still applies for the current session when storage is unavailable.
+                }
+            }
+            ui.themeToggle.setAttribute('aria-pressed', String(isLight));
+            ui.themeToggle.setAttribute('aria-label', isLight ? 'Activer le thème sombre' : 'Activer le thème clair');
+        }
+
+        setTheme(getActiveTheme(), false);
 
         // --- Initialization ---
         window.addEventListener('load', () => {
@@ -314,6 +376,9 @@
             ui.pauseMenu.classList.add('hidden');
         });
         ui.menuBtn.addEventListener('click', stopGame);
+        ui.themeToggle.addEventListener('click', () => {
+            setTheme(getActiveTheme() === 'light' ? 'dark' : 'light');
+        });
 
         ui.settingsToggle.addEventListener('click', () => {
             ui.settingsPanel.classList.toggle('active');
