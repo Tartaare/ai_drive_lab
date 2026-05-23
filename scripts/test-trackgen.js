@@ -4,6 +4,7 @@ const ts = require('typescript');
 
 const rootDir = path.resolve(__dirname, '..');
 const sourcePath = path.join(rootDir, 'src', 'ts', 'world', 'ProceduralTrack.ts');
+const moduleCache = new Map();
 
 const UI_RANGES = {
     numControlPoints: { min: 6, mid: 13, max: 20, integer: true },
@@ -14,7 +15,15 @@ const UI_RANGES = {
 };
 
 function loadTrackModule() {
-    const source = fs.readFileSync(sourcePath, 'utf8');
+    return loadTypeScriptModule(sourcePath);
+}
+
+function loadTypeScriptModule(filePath) {
+    const resolvedPath = path.resolve(filePath);
+    const cached = moduleCache.get(resolvedPath);
+    if (cached) return cached.exports;
+
+    const source = fs.readFileSync(resolvedPath, 'utf8');
     const output = ts.transpileModule(source, {
         compilerOptions: {
             module: ts.ModuleKind.CommonJS,
@@ -23,8 +32,18 @@ function loadTrackModule() {
     }).outputText;
 
     const mod = { exports: {} };
+    moduleCache.set(resolvedPath, mod);
+    const localRequire = function requireFromModule(request) {
+        if (!request.startsWith('.')) {
+            return require(request);
+        }
+
+        const basePath = path.resolve(path.dirname(resolvedPath), request);
+        const candidatePath = fs.existsSync(basePath) ? basePath : `${basePath}.ts`;
+        return loadTypeScriptModule(candidatePath);
+    };
     const compiled = new Function('require', 'exports', 'module', output);
-    compiled(require, mod.exports, mod);
+    compiled(localRequire, mod.exports, mod);
     return mod.exports;
 }
 
