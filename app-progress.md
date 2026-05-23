@@ -1,3 +1,27 @@
+# SPRINT theme-toggle-ux — Theme clair/sombre menu principal
+
+# Date : 2026-05-23
+
+# Statut : termine
+
+# Composants :
+- `index.html`
+- `src/css/style.css`
+- `design_language.md`
+
+# Validation :
+- Ajout d'un bouton `theme-toggle` minimaliste en haut a droite du menu principal.
+- Theme persistant via `localStorage` (`apex-theme`) apres choix utilisateur.
+- Initialisation sans flash via `data-theme` avant chargement CSS, avec fallback `prefers-color-scheme`.
+- Etats accessibles : `aria-label`, `aria-pressed`, focus visible et respect de `prefers-reduced-motion`.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+- `npx tsc --noEmit` : bloque par incompatibilite existante entre `typescript@3.9.9` et les definitions recentes `@types/node` / `undici-types`.
+
+# Risques restants :
+- Le theme clair a ete integre par tokens UI ; une validation visuelle navigateur desktop/mobile reste recommandee pour juger le contraste exact sur scene 3D active.
+- Le HUD herite du theme clair pendant la conduite ; a surveiller sur circuits tres lumineux si le rendu 3D evolue.
+
 # SPRINT track-generation-radius-fix — Stabilisation génération procédurale
 
 # Date : 2026-05-21

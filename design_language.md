@@ -2,7 +2,8 @@
 version: alpha
 name: APEX
 description: >
-  Simulation de conduite 3D dark-first, inspiree d'un cockpit motorsport.
+  Simulation de conduite 3D dark-first avec variante claire optionnelle,
+  inspiree d'un cockpit motorsport.
   L'interface doit rester immersive, technique et lisible sans masquer le rendu
   Three.js ni ralentir l'action.
 
@@ -24,6 +25,12 @@ colors:
   error: "#ff3b30"
   warning: "#ffcc00"
   success: "#34c759"
+  light-background: "#eef1ec"
+  light-surface-glass: "rgba(244, 246, 243, 0.72)"
+  light-surface-panel: "rgba(244, 246, 243, 0.9)"
+  light-text-primary: "#10120f"
+  light-text-secondary: "rgba(16, 18, 15, 0.68)"
+  light-border-subtle: "rgba(16, 18, 15, 0.13)"
 
 typography:
   display-xl:
@@ -110,7 +117,7 @@ effects:
 
 # APEX - Design System
 
-APEX est une simulation de conduite 3D dont l'interface agit comme une couche cockpit : sombre, precise, responsive et minimale. Le rendu 3D reste le produit principal ; l'UI doit guider, informer et reagir sans voler l'attention.
+APEX est une simulation de conduite 3D dont l'interface agit comme une couche cockpit : precise, responsive et minimale. Le rendu 3D reste le produit principal ; l'UI doit guider, informer et reagir sans voler l'attention. Le theme sombre reste l'identite par defaut ; le theme clair est une variante de confort visuel, pas une refonte graphique.
 
 ---
 
@@ -119,7 +126,7 @@ APEX est une simulation de conduite 3D dont l'interface agit comme une couche co
 **Direction esthetique :** interface tactique motorsport, monochrome, angulaire, inspiree HUD.  
 **Personnalite :** technique, rapide, compacte, immersive.  
 **Cible :** joueur/pilote qui doit comprendre l'etat de la voiture et lancer une session sans friction.  
-**Element memorable :** le contraste entre une scene 3D plein ecran et une UI blanche, ciselee, en surimpression type cockpit.
+**Element memorable :** le contraste entre une scene 3D plein ecran et une UI ciselee, en surimpression type cockpit.
 
 **Cibles emotionnelles :** concentration, vitesse, precision, controle.  
 **Anti-cibles :** dashboard SaaS generique, cartes blanches, gradients bleu/violet, decoration gratuite, UI qui couvre la piste.
@@ -149,6 +156,7 @@ APEX est une simulation de conduite 3D dont l'interface agit comme une couche co
 - **Danger (`#ff3b30`) :** redline RPM et actions destructives comme `ABORT SESSION`.
 - **Success (`#34c759`) :** confirmations futures uniquement, jamais decoratif.
 - **Warning (`#ffcc00`) :** etats de degradation futurs uniquement.
+- **Theme clair (`#eef1ec`, `#10120f`) :** variante de lisibilite, a utiliser par tokens uniquement.
 
 ### Regles Couleur
 
@@ -156,6 +164,17 @@ APEX est une simulation de conduite 3D dont l'interface agit comme une couche co
 - Ne pas introduire de gradients bleu/violet. Le seul gradient actuel est blanc vers blanc translucide pour le titre `APEX`.
 - Maintenir le contraste WCAG AA sur tout texte fonctionnel.
 - Utiliser les surfaces transparentes seulement quand le contexte 3D reste lisible derriere.
+- Toute nouvelle couleur fonctionnelle doit passer par un token CSS compatible sombre/clair.
+
+### Themes Clair / Sombre
+
+- Le theme actif est porte par `:root[data-theme="dark|light"]`.
+- Le stockage utilisateur utilise `localStorage` avec la cle `apex-theme`.
+- En absence de choix utilisateur, l'application suit `prefers-color-scheme`.
+- Le theme sombre reste la reference visuelle et la premiere validation.
+- Le theme clair inverse l'encre et les surfaces avec une base froide neutre, sans carte blanche decorative.
+- Les controles HUD et overlays doivent rester lisibles sur canvas 3D variable dans les deux themes.
+- Le changement de theme doit etre instantane, accessible au clavier et annonce par `aria-pressed` / `aria-label`.
 
 ---
 
@@ -245,6 +264,7 @@ APEX utilise des formes angulaires et compactes. Les grands arrondis sont rares.
 - Les CTA utilisent la decoupe `clip-path` cyber, pas un radius classique.
 - Ne pas introduire de grandes cartes arrondies.
 - Les formes rondes sont reservees aux controles iconiques isoles, comme `settings-toggle`.
+- Les toggles iconiques comme `theme-toggle` peuvent utiliser `border-radius: full` quand leur fonction est binaire et compacte.
 
 ---
 
@@ -293,6 +313,17 @@ Variantes : danger via `border-color: var(--c-danger)`.
 Controle pleine largeur, fond noir, bordure blanche discrete, typographie display uppercase.
 
 Etats : hover avec `border-color: white`. Tout ajout doit inclure un focus visible clavier.
+
+### Theme Toggle (`.theme-toggle`)
+
+Bouton minimaliste haut droit du menu principal. Il utilise un rail compact et un orb anime avec icone soleil/lune.
+
+Regles :
+- Toujours fournir `aria-label` et `aria-pressed`.
+- Conserver une cible confortable sur mobile et desktop.
+- Ne pas afficher de texte visible additionnel : l'icone et la position suffisent.
+- Respecter `prefers-reduced-motion` en supprimant les transitions du toggle.
+- Ne jamais appliquer de filtre global au canvas ; seuls les tokens UI changent.
 
 ### HUD Telemetrie (`.hud-cluster`)
 
