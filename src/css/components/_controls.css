@@ -1,0 +1,107 @@
+/* --- Interactive Elements --- */
+.cyber-btn {
+    position: relative;
+    background: var(--c-bg-control);
+    border: 1px solid var(--c-border-subtle);
+    padding: 1.2rem 2rem;
+    color: var(--c-text);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s var(--ease-smooth);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    pointer-events: auto;
+    text-align: center;
+}
+
+.cyber-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--c-accent);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 0.3s var(--ease-smooth);
+}
+
+.cyber-btn:hover {
+    background: var(--c-border-subtle);
+    border-color: var(--c-border-strong);
+    padding-left: 2.5rem;
+    text-shadow: 0 0 10px var(--c-accent-glow);
+}
+
+.cyber-btn:hover::before {
+    transform: scaleY(1);
+}
+
+.cyber-btn:active {
+    transform: scale(0.98);
+}
+
+.showroom-start:active {
+    transform: translateX(-50%) scale(0.98);
+}
+
+.cyber-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    border-color: var(--c-border-subtle);
+    text-shadow: none;
+    pointer-events: none;
+}
+
+.cyber-btn[aria-busy="true"] {
+    cursor: wait;
+    opacity: 0.55;
+    border-color: var(--c-border-subtle);
+    text-shadow: none;
+    pointer-events: none;
+}
+
+.cyber-btn:disabled::before,
+.cyber-btn[aria-busy="true"]::before {
+    transform: scaleY(1);
+    background: var(--c-success);
+}
+
+.cyber-select {
+    appearance: none;
+    width: 100%;
+    background: var(--c-bg-dark);
+    color: var(--c-text);
+    border: 1px solid var(--c-border-subtle);
+    padding: 1rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    outline: none;
+    pointer-events: auto;
+}
+
+.cyber-select:hover {
+    border-color: var(--c-accent);
+}
+
+.cyber-btn:focus-visible,
+.cyber-select:focus-visible,
+.showroom-mode:focus-visible,
+.vehicle-nav:focus-visible,
+.track-new-btn:focus-visible,
+.settings-toggle:focus-visible,
+.theme-toggle:focus-visible,
+.close-btn:focus-visible,
+input[type="range"]:focus-visible {
+    outline: 2px solid var(--c-focus-ring);
+    outline-offset: 4px;
+}
+

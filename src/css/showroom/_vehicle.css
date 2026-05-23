@@ -1,0 +1,211 @@
+.showroom-vehicle {
+    --showroom-start-gap: 3.9rem;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    min-width: 0;
+    pointer-events: none;
+    animation: showroomVehicleIn 0.9s var(--ease-smooth) 0.08s both;
+}
+
+.vehicle-stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    isolation: isolate;
+    pointer-events: auto;
+}
+
+.vehicle-stage::before {
+    display: none;
+}
+
+.vehicle-stage__canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+}
+
+.vehicle-stage__canvas:active {
+    cursor: grabbing;
+}
+
+.vehicle-stage__status {
+    position: absolute;
+    left: 50%;
+    bottom: 14.2rem;
+    transform: translateX(-50%);
+    min-height: 1rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-text-soft);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.vehicle-stage[data-state="loading"] .vehicle-stage__status::before {
+    content: '';
+    display: inline-block;
+    width: 42px;
+    height: 2px;
+    margin-right: 0.6rem;
+    vertical-align: middle;
+    background: var(--c-motorsport);
+    box-shadow: 0 0 18px var(--c-motorsport-glow);
+    animation: loadProgress 1.2s ease-in-out infinite;
+}
+
+.vehicle-stage[data-state="loading"]::after,
+.vehicle-stage[data-state="error"]::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(42vw, 520px);
+    height: min(18vw, 190px);
+    transform: translate(-50%, -28%);
+    border: 1px solid var(--c-motorsport-dim);
+    background: linear-gradient(135deg, transparent 12%, rgba(255, 255, 255, 0.035), transparent 64%);
+    clip-path: polygon(8% 62%, 18% 34%, 38% 24%, 70% 28%, 84% 48%, 94% 58%, 86% 70%, 16% 70%);
+    filter: drop-shadow(0 0 38px var(--c-motorsport-dim));
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.vehicle-info {
+    position: absolute;
+    left: 50%;
+    bottom: var(--showroom-start-gap);
+    z-index: 3;
+    width: min(740px, calc(100vw - 3rem));
+    transform: translateX(-50%);
+    display: grid;
+    justify-items: center;
+    pointer-events: auto;
+    animation: showroomPanelIn 0.72s var(--ease-smooth) 0.28s both;
+}
+
+.vehicle-selector {
+    width: min(610px, 100%);
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.vehicle-title {
+    min-width: 0;
+    text-align: center;
+}
+
+.vehicle-title h1 {
+    font-size: clamp(2rem, 4.2vw, 3.6rem);
+    line-height: 0.9;
+    letter-spacing: 0.05em;
+    margin-top: 0.35rem;
+    text-shadow: 0 0 32px rgba(0, 0, 0, 0.55);
+}
+
+.vehicle-nav {
+    width: 34px;
+    height: 48px;
+    border: 0;
+    background: transparent;
+    color: var(--c-text);
+    font-family: var(--font-display);
+    font-size: 3.1rem;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    text-shadow: 0 0 24px rgba(0, 0, 0, 0.68);
+    transition: transform 0.2s var(--ease-smooth), color 0.25s var(--ease-smooth), text-shadow 0.25s var(--ease-smooth);
+}
+
+.vehicle-nav:hover {
+    color: var(--c-motorsport);
+    text-shadow: 0 0 18px var(--c-motorsport-glow);
+}
+
+.vehicle-nav:active {
+    transform: scale(0.94);
+}
+
+.vehicle-stats {
+    width: min(680px, 100%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin-top: 0.9rem;
+}
+
+.vehicle-stat {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.35rem 0.65rem;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: showroomStatIn 0.45s var(--ease-smooth) both;
+}
+
+.vehicle-stat:nth-child(2) { animation-delay: 0.04s; }
+.vehicle-stat:nth-child(3) { animation-delay: 0.08s; }
+.vehicle-stat:nth-child(4) { animation-delay: 0.12s; }
+.vehicle-stat:nth-child(5) { animation-delay: 0.16s; }
+.vehicle-stat:nth-child(6) { animation-delay: 0.2s; }
+
+.vehicle-stat__label {
+    font-size: 0.58rem;
+    color: var(--c-text-muted);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.vehicle-stat__value {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.vehicle-stat__delta {
+    min-width: 1.6rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(3px);
+}
+
+.vehicle-stat__delta--up,
+.vehicle-stat__delta--down {
+    opacity: 1;
+    animation: statDeltaPulse 1.3s var(--ease-smooth) both;
+}
+
+.vehicle-stat__delta--up {
+    color: var(--c-success);
+}
+
+.vehicle-stat__delta--down {
+    color: var(--c-danger);
+}
+
+.vehicle-stat__bar {
+    grid-column: 1 / -1;
+    height: 2px;
+    overflow: hidden;
+    background: var(--c-border-subtle);
+}
+
+.vehicle-stat__bar span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--c-motorsport), var(--c-accent));
+    transform-origin: left;
+}
+

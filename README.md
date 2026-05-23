@@ -61,7 +61,10 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 │   └── simple_car.min.js   # Bundle principal
 ├── src/
 │   ├── css/
-│   │   └── style.css        # Design System APEX complet
+│   │   ├── style.css        # Point d'entree CSS modulaire
+│   │   ├── base/            # Tokens et layout global
+│   │   ├── showroom/        # Shell, modes, vehicule, circuit
+│   │   └── components/      # Controles, HUD, settings, loader, favoris
 │   ├── ts/
 │   │   ├── main.ts          # Orchestration monde/scene/entrees
 │   │   ├── core/
@@ -81,6 +84,7 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 │   │       └── menu/        # Menu showroom automobile
 │   │           ├── MainMenuController.ts    # Controller menu principal
 │   │           ├── VehiclePreview.ts        # Preview vehicule 3D
+│   │           ├── vehiclePreviewScene.ts   # Scene statique preview vehicule
 │   │           ├── ProceduralTrackPreview.ts # Preview circuit top-down
 │   │           ├── catalog.ts               # Catalogue vehicules
 │   │           └── renderers.ts             # Renderers UI

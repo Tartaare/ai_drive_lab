@@ -1,3 +1,43 @@
+# SPRINT modular-css-menu-preview — Modularisation CSS et preview véhicule
+
+# Date : 2026-05-23
+
+# Statut : termine
+
+# Composants :
+- `src/css/style.css`
+- `src/css/base/_tokens.css`
+- `src/css/base/_layout.css`
+- `src/css/showroom/_shell.css`
+- `src/css/showroom/_modes.css`
+- `src/css/showroom/_vehicle.css`
+- `src/css/showroom/_track.css`
+- `src/css/components/_legacy-menu.css`
+- `src/css/components/_controls.css`
+- `src/css/components/_theme-toggle.css`
+- `src/css/components/_hud.css`
+- `src/css/components/_settings-panel.css`
+- `src/css/components/_loader-motion-responsive.css`
+- `src/css/components/_favorites.css`
+- `src/ts/ui/menu/VehiclePreview.ts`
+- `src/ts/ui/menu/vehiclePreviewScene.ts`
+- `src/ts/ui/menu/MainMenuController.ts`
+- `README.md`
+
+# Validation :
+- `src/css/style.css` devient un point d'entree de `14` lignes qui importe des modules CSS par responsabilite.
+- Tous les modules CSS applicatifs sont sous `250` lignes ; le plus grand est `_loader-motion-responsive.css` avec `242` lignes.
+- Extraction des helpers de scene statique de preview vehicule dans `vehiclePreviewScene.ts`.
+- `VehiclePreview.ts` passe sous le seuil avec `242` lignes ; `MainMenuController.ts` passe a `250` lignes sans changer son contrat public.
+- Scan applicatif `src` hors librairie tierce Cannon : seuls `src/ts/main.ts` (`959`) et `src/ts/vehicles/SimpleCar.ts` (`1000`) restent au-dessus de `250` lignes.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+- `npx tsc --noEmit` : toujours bloque par incompatibilite existante entre `typescript@3.9.9` et les definitions recentes `@types/node` / `undici-types`.
+
+# Risques restants :
+- `main.ts` et `SimpleCar.ts` concentrent encore orchestration monde/camera/input et logique vehicule/drivetrain/physique. Leur decoupe doit etre traitee dans un sprint moteur dedie pour eviter une regression de conduite.
+- La modularisation CSS preserve l'ordre de cascade existant ; une verification visuelle desktop/mobile reste recommandee apres merge.
+
 # SPRINT showroom-main-menu — Refonte menu showroom automobile
 
 # Date : 2026-05-23

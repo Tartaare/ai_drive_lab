@@ -77,13 +77,32 @@ export class ProceduralTrackPreview {
         const maxZ = Math.max.apply(Math, zs);
         const width = Math.max(maxX - minX, 1);
         const height = Math.max(maxZ - minZ, 1);
-        const path = points.map((p, index) => {
-            const x = 10 + ((p.x - minX) / width) * 80;
-            const y = 10 + ((p.z - minZ) / height) * 80;
-            return (index === 0 ? 'M ' : 'L ') + x.toFixed(2) + ' ' + y.toFixed(2);
+        const mapPoint = (p: { x: number; z: number }) => ({
+            x: 10 + ((p.x - minX) / width) * 80,
+            y: 10 + ((p.z - minZ) / height) * 80
+        });
+        const mapped = points.map(mapPoint);
+        const path = mapped.map((p, index) => {
+            return (index === 0 ? 'M ' : 'L ') + p.x.toFixed(2) + ' ' + p.y.toFixed(2);
         }).join(' ') + ' Z';
+        const start = mapped[0];
+        const next = mapped[Math.min(3, mapped.length - 1)];
+        const dx = next.x - start.x;
+        const dy = next.y - start.y;
+        const length = Math.max(Math.sqrt(dx * dx + dy * dy), 0.001);
+        const normalX = (-dy / length) * 4.4;
+        const normalY = (dx / length) * 4.4;
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const grid = '<path class="track-miniature__grid" d="M20 8 V92 M40 8 V92 M60 8 V92 M80 8 V92 M8 20 H92 M8 40 H92 M8 60 H92 M8 80 H92"></path>';
+        const startLine = '<line class="track-miniature__start" x1="' + (start.x - normalX).toFixed(2) + '" y1="' + (start.y - normalY).toFixed(2) + '" x2="' + (start.x + normalX).toFixed(2) + '" y2="' + (start.y + normalY).toFixed(2) + '"></line>';
+        const direction = '<polygon class="track-miniature__direction" points="0,-3.2 6,0 0,3.2" transform="translate(' + next.x.toFixed(2) + ' ' + next.y.toFixed(2) + ') rotate(' + angle.toFixed(2) + ')"></polygon>';
         return '<svg class="track-miniature" viewBox="0 0 100 100" role="img" aria-label="Miniature du circuit généré">' +
-            '<path class="track-miniature__line" d="' + path + '"></path></svg>';
+            grid +
+            '<path class="track-miniature__halo" d="' + path + '"></path>' +
+            '<path class="track-miniature__line" d="' + path + '"></path>' +
+            startLine +
+            direction +
+            '</svg>';
     }
 
     private randomSeed(): number {

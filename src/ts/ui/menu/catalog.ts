@@ -40,11 +40,11 @@ export interface TrackDefinition {
     unavailableReason?: string;
 }
 
-const stat = (label: string, value: number, unit: string, max: number): VehicleStat => ({
+const stat = (label: string, value: number): VehicleStat => ({
     label,
     value,
-    unit,
-    max
+    unit: '',
+    max: 100
 });
 
 export const VEHICLES: VehicleDefinition[] = [
@@ -54,12 +54,12 @@ export const VEHICLES: VehicleDefinition[] = [
         modelPath: 'car_models/car_blue_small.glb',
         profile: 'Compact response chassis',
         stats: {
-            topSpeed: stat('Vitesse max', 238, 'km/h', 320),
-            acceleration: stat('Accélération', 4.7, 's', 8),
-            handling: stat('Maniabilité', 86, '', 100),
-            braking: stat('Freinage', 82, '', 100),
-            weight: stat('Poids', 1180, 'kg', 1800),
-            grip: stat('Adhérence', 84, '', 100)
+            topSpeed: stat('Vitesse', 74),
+            acceleration: stat('Accélération', 76),
+            handling: stat('Maniabilité', 86),
+            braking: stat('Freinage', 82),
+            weight: stat('Légèreté', 88),
+            grip: stat('Adhérence', 84)
         }
     },
     {
@@ -68,12 +68,12 @@ export const VEHICLES: VehicleDefinition[] = [
         modelPath: 'car_models/car_orange.glb',
         profile: 'Balanced road prototype',
         stats: {
-            topSpeed: stat('Vitesse max', 268, 'km/h', 320),
-            acceleration: stat('Accélération', 4.1, 's', 8),
-            handling: stat('Maniabilité', 78, '', 100),
-            braking: stat('Freinage', 80, '', 100),
-            weight: stat('Poids', 1340, 'kg', 1800),
-            grip: stat('Adhérence', 79, '', 100)
+            topSpeed: stat('Vitesse', 84),
+            acceleration: stat('Accélération', 84),
+            handling: stat('Maniabilité', 78),
+            braking: stat('Freinage', 80),
+            weight: stat('Légèreté', 76),
+            grip: stat('Adhérence', 79)
         }
     },
     {
@@ -82,12 +82,12 @@ export const VEHICLES: VehicleDefinition[] = [
         modelPath: 'car_models/car_red.glb',
         profile: 'High-speed grand tourer',
         stats: {
-            topSpeed: stat('Vitesse max', 292, 'km/h', 320),
-            acceleration: stat('Accélération', 3.8, 's', 8),
-            handling: stat('Maniabilité', 73, '', 100),
-            braking: stat('Freinage', 76, '', 100),
-            weight: stat('Poids', 1480, 'kg', 1800),
-            grip: stat('Adhérence', 77, '', 100)
+            topSpeed: stat('Vitesse', 91),
+            acceleration: stat('Accélération', 88),
+            handling: stat('Maniabilité', 73),
+            braking: stat('Freinage', 76),
+            weight: stat('Légèreté', 65),
+            grip: stat('Adhérence', 77)
         }
     },
     {
@@ -96,12 +96,12 @@ export const VEHICLES: VehicleDefinition[] = [
         modelPath: 'car_models/ferrari_testarossa_84_low_poly.glb',
         profile: 'Classic low-poly icon',
         stats: {
-            topSpeed: stat('Vitesse max', 276, 'km/h', 320),
-            acceleration: stat('Accélération', 5.3, 's', 8),
-            handling: stat('Maniabilité', 68, '', 100),
-            braking: stat('Freinage', 70, '', 100),
-            weight: stat('Poids', 1506, 'kg', 1800),
-            grip: stat('Adhérence', 72, '', 100)
+            topSpeed: stat('Vitesse', 86),
+            acceleration: stat('Accélération', 66),
+            handling: stat('Maniabilité', 68),
+            braking: stat('Freinage', 70),
+            weight: stat('Légèreté', 62),
+            grip: stat('Adhérence', 72)
         }
     }
 ];

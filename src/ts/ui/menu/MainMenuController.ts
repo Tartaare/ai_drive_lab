@@ -11,7 +11,6 @@ import * as AppStorage from '../../core/AppStorage';
 import { ProceduralTrackPreview } from './ProceduralTrackPreview';
 import { createModeButton, renderVehicleStats } from './renderers';
 import { TrackConfig } from '../../world/ProceduralTrack';
-
 export interface MainMenuSelection {
     vehicleId: string;
     vehicleModelPath: string;
@@ -49,6 +48,7 @@ export class MainMenuController {
     private modeId: GameModeDefinition['id'] = 'free_roam';
     private trackAvailability: { [id: string]: boolean } = { procedural: true, grand_prix: false };
     private renderedVehicleId = '';
+    private previousVehicle: VehicleDefinition | null = null;
 
     constructor(options: MainMenuControllerOptions) {
         this.root = options.root;
@@ -160,13 +160,15 @@ export class MainMenuController {
 
     private renderVehicle(direction: -1 | 0 | 1): void {
         const vehicle = this.getVehicle();
+        const comparisonVehicle = direction === 0 ? null : this.previousVehicle;
         this.vehicleName.textContent = vehicle.name;
         this.vehicleProfile.textContent = vehicle.profile;
-        renderVehicleStats(this.statList, vehicle);
+        renderVehicleStats(this.statList, vehicle, comparisonVehicle);
         if (this.renderedVehicleId !== vehicle.id || direction !== 0) {
             this.renderedVehicleId = vehicle.id;
             this.preview.setVehicle(vehicle, direction);
         }
+        this.previousVehicle = vehicle;
         this.preview.preload(this.getAdjacentVehicles());
     }
 

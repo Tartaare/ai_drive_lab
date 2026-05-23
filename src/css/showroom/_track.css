@@ -1,0 +1,170 @@
+.track-panel {
+    min-height: 330px;
+    display: grid;
+    grid-template-rows: minmax(160px, 1fr) auto auto;
+    gap: 1rem;
+    border-left: 0;
+    padding-left: 0;
+}
+
+.track-panel.is-disabled {
+    opacity: 0.52;
+}
+
+.track-miniature {
+    width: 100%;
+    min-height: 170px;
+    border: 1px solid var(--c-panel-bevel);
+    background:
+        radial-gradient(circle at 50% 52%, var(--c-motorsport-dim), transparent 58%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent 48%),
+        rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 0 44px rgba(0, 0, 0, 0.4);
+}
+
+.track-miniature--empty {
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    color: var(--c-text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.track-miniature__line {
+    fill: none;
+    stroke: var(--c-accent);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 8px var(--c-accent-glow));
+}
+
+.track-miniature__halo {
+    fill: none;
+    stroke: var(--c-motorsport);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.18;
+}
+
+.track-miniature__grid {
+    fill: none;
+    stroke: var(--c-border-subtle);
+    stroke-width: 0.45;
+}
+
+.track-miniature__start {
+    stroke: var(--c-motorsport);
+    stroke-width: 2.6;
+    stroke-linecap: square;
+    filter: drop-shadow(0 0 6px var(--c-motorsport-glow));
+}
+
+.track-miniature__direction {
+    fill: var(--c-motorsport);
+    filter: drop-shadow(0 0 6px var(--c-motorsport-glow));
+}
+
+.track-panel__body {
+    display: grid;
+    gap: 0.28rem;
+    color: var(--c-text-muted);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.track-panel__body strong {
+    color: var(--c-text);
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.track-panel__label {
+    color: var(--c-text-soft);
+}
+
+.track-new-btn {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--c-border-subtle);
+    background: rgba(255, 138, 31, 0.035);
+    color: var(--c-text);
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: border-color 0.25s var(--ease-smooth), background 0.25s var(--ease-smooth), transform 0.2s var(--ease-smooth);
+}
+
+.track-new-btn:hover {
+    border-color: var(--c-motorsport-soft);
+    background: var(--c-motorsport-dim);
+}
+
+.track-new-btn:active {
+    transform: scale(0.98);
+}
+
+.track-new-btn[aria-busy="true"] {
+    opacity: 0.65;
+    cursor: wait;
+}
+
+.showroom-start {
+    position: relative;
+    margin-top: var(--showroom-start-gap);
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--c-motorsport);
+    background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.25), transparent 50%),
+        linear-gradient(90deg, rgba(255, 138, 31, 0.35), rgba(255, 138, 31, 0.15));
+    box-shadow: 0 0 45px var(--c-motorsport-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    font-size: 2.35rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    animation: showroomCtaIn 0.78s var(--ease-smooth) 0.38s both;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+
+.showroom-start::before {
+    width: 6px;
+    background: var(--c-motorsport);
+    transform: scaleY(1);
+    box-shadow: 0 0 15px var(--c-motorsport);
+}
+
+.showroom-start:hover {
+    border-color: var(--c-motorsport-soft);
+    background:
+        radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.4), transparent 50%),
+        linear-gradient(90deg, rgba(255, 138, 31, 0.55), rgba(255, 138, 31, 0.25));
+    box-shadow: 0 0 70px var(--c-motorsport-soft), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.9);
+}
+
+.showroom-start:active {
+    transform: scale(0.97);
+    box-shadow: 0 0 25px var(--c-motorsport-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.showroom-start:disabled,
+.showroom-start[aria-busy="true"] {
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+    border-color: var(--c-border-subtle);
+    color: var(--c-text-muted);
+}
+

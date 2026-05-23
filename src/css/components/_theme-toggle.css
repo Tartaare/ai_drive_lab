@@ -1,0 +1,95 @@
+/* Theme Toggle */
+.theme-toggle {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    z-index: 6;
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--c-panel-bevel);
+    border-radius: 15px;
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 42%),
+        rgba(14, 14, 17, 0.82);
+    color: var(--c-text);
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    animation: showroomPanelIn 0.7s var(--ease-smooth) 0.16s both;
+    transition: border-color 0.3s var(--ease-smooth), background 0.3s var(--ease-smooth), transform 0.2s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth);
+}
+
+.theme-toggle:hover {
+    border-color: var(--c-motorsport-soft);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42), 0 0 24px var(--c-motorsport-dim), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.theme-toggle:active {
+    transform: scale(0.96);
+}
+
+.theme-toggle__track {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+}
+
+.theme-toggle__orb {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: transparent;
+    color: #f6f6f8;
+    display: grid;
+    place-items: center;
+    transition: transform 0.45s var(--ease-smooth), color 0.3s var(--ease-smooth);
+}
+
+.theme-toggle__icon {
+    grid-area: 1 / 1;
+    width: 24px;
+    height: 24px;
+    stroke-width: 2.4;
+    transition: opacity 0.25s var(--ease-smooth), transform 0.45s var(--ease-smooth);
+}
+
+.theme-toggle__icon--sun {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.45);
+    color: var(--c-motorsport);
+}
+
+.theme-toggle__icon--moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+    color: #f6f6f8;
+}
+
+:root[data-theme="light"] .theme-toggle__orb {
+    transform: rotate(180deg);
+    color: #171717;
+}
+
+:root[data-theme="light"] .theme-toggle {
+    background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(218, 222, 215, 0.64)),
+        rgba(238, 241, 236, 0.86);
+    box-shadow: 0 16px 34px rgba(42, 45, 38, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+:root[data-theme="light"] .theme-toggle__icon--sun {
+    opacity: 1;
+    transform: rotate(-180deg) scale(1);
+}
+
+:root[data-theme="light"] .theme-toggle__icon--moon {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.45);
+}
+

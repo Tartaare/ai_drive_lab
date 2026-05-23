@@ -7,6 +7,12 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
 
 export class VehiclePreview {
+    private static readonly CAMERA_DISTANCE_MIN = 0.86;
+    private static readonly CAMERA_DISTANCE_MAX = 2.05;
+    private static readonly CAMERA_DISTANCE_STEP = 0.1;
+    private static readonly TARGET_FOOTPRINT_LENGTH = 3.4;
+    private static readonly TARGET_FOOTPRINT_WIDTH = 1.65;
+    private static readonly TARGET_HEIGHT = 1.25;
     private readonly container: HTMLElement;
     private readonly status: HTMLElement;
     private readonly renderer: THREE.WebGLRenderer;
@@ -23,7 +29,9 @@ export class VehiclePreview {
     private dragStartX = 0;
     private dragStartRotation = 0;
     private isDragging = false;
+    private isPointerOver = false;
     private lastTime = performance.now();
+    private cameraDistance = 1.22;
 
     constructor(container: HTMLElement, status: HTMLElement) {
         this.container = container;
@@ -34,12 +42,12 @@ export class VehiclePreview {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.domElement.className = 'vehicle-stage__canvas';
         this.renderer.domElement.setAttribute('aria-label', 'Prévisualisation 3D du véhicule');
+        this.renderer.domElement.tabIndex = 0;
         this.container.appendChild(this.renderer.domElement);
 
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-        this.camera.position.set(4.8, 2.4, 6.2);
-        this.camera.lookAt(0, 0.7, 0);
+        this.applyCameraDistance();
 
         this.floorMaterial = new THREE.MeshStandardMaterial({
             color: 0x171717,
@@ -133,7 +141,15 @@ export class VehiclePreview {
         const center = new THREE.Vector3();
         box.getSize(size);
         box.getCenter(center);
-        const scale = 3.6 / Math.max(size.x, size.y, size.z, 1);
+        const length = Math.max(size.z, 0.001);
+        const width = Math.max(size.x, 0.001);
+        const height = Math.max(size.y, 0.001);
+        const footprintScale = Math.min(
+            VehiclePreview.TARGET_FOOTPRINT_LENGTH / length,
+            VehiclePreview.TARGET_FOOTPRINT_WIDTH / width
+        );
+        const heightScale = VehiclePreview.TARGET_HEIGHT / height;
+        const scale = THREE.MathUtils.clamp(footprintScale * 0.82 + heightScale * 0.18, 0.2, 6);
         model.scale.setScalar(scale);
         model.position.set(-center.x * scale, -box.min.y * scale + 0.04, -center.z * scale);
     }
@@ -170,7 +186,14 @@ export class VehiclePreview {
             this.isDragging = true;
             this.dragStartX = event.clientX;
             this.dragStartRotation = this.rotationY;
+            this.renderer.domElement.focus();
             this.renderer.domElement.setPointerCapture(event.pointerId);
+        });
+        this.renderer.domElement.addEventListener('pointerenter', () => {
+            this.isPointerOver = true;
+        });
+        this.renderer.domElement.addEventListener('pointerleave', () => {
+            this.isPointerOver = false;
         });
         this.renderer.domElement.addEventListener('pointermove', (event: PointerEvent) => {
             if (!this.isDragging) return;
@@ -179,7 +202,46 @@ export class VehiclePreview {
         this.renderer.domElement.addEventListener('pointerup', () => {
             this.isDragging = false;
         });
+        this.renderer.domElement.addEventListener('wheel', (event: WheelEvent) => {
+            this.handleZoomInput(event.deltaY > 0 ? 1 : -1, event);
+        }, { passive: false });
+        this.renderer.domElement.addEventListener('keydown', (event: KeyboardEvent) => {
+            this.handleKeyZoom(event);
+        });
+        window.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (!this.isPointerOver && document.activeElement !== this.renderer.domElement) return;
+            this.handleKeyZoom(event);
+        });
         window.addEventListener('resize', () => this.resize());
+    }
+
+    private setCameraDistance(next: number): void {
+        this.cameraDistance = THREE.MathUtils.clamp(
+            next,
+            VehiclePreview.CAMERA_DISTANCE_MIN,
+            VehiclePreview.CAMERA_DISTANCE_MAX
+        );
+        this.applyCameraDistance();
+    }
+
+    private applyCameraDistance(): void {
+        this.camera.position.set(7.4 * this.cameraDistance, 2.45 * this.cameraDistance, 9.6 * this.cameraDistance);
+        this.camera.lookAt(0, 0.74, 0);
+    }
+
+    private handleZoomInput(direction: -1 | 1, event?: Event): void {
+        if (event) event.preventDefault();
+        this.setCameraDistance(
+            this.cameraDistance + direction * VehiclePreview.CAMERA_DISTANCE_STEP
+        );
+    }
+
+    private handleKeyZoom(event: KeyboardEvent): void {
+        if (event.key === '+' || event.key === '=' || event.key === 'NumpadAdd' || event.key === 'PageUp') {
+            this.handleZoomInput(-1, event);
+        } else if (event.key === '-' || event.key === '_' || event.key === 'NumpadSubtract' || event.key === 'PageDown') {
+            this.handleZoomInput(1, event);
+        }
     }
 
     private resize(): void {

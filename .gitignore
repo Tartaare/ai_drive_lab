@@ -2,10 +2,13 @@
 node_modules/
 dist/
 templates/
-notes.md
+
 docs/
 .agents/
 .windsurf/
 car_models/*.glb
 3D_models/
-    
+
+
+
+notes.md

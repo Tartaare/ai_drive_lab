@@ -92,15 +92,21 @@
                     <div id="vehicle-preview-stage" class="vehicle-stage">
                         <div id="vehicle-preview-status" class="vehicle-stage__status" role="status" aria-live="polite"></div>
                     </div>
-                    <div class="vehicle-selector">
-                        <button id="vehicle-prev" class="vehicle-nav" type="button" aria-label="Véhicule précédent">‹</button>
-                        <div class="vehicle-title">
-                            <span id="showroom-vehicle-profile" class="showroom-kicker">Vehicle profile</span>
-                            <h1 id="showroom-vehicle-name">Vehicle</h1>
+                    <div class="vehicle-info">
+                        <div class="vehicle-selector">
+                            <button id="vehicle-prev" class="vehicle-nav" type="button" aria-label="Véhicule précédent">‹</button>
+                            <div class="vehicle-title">
+                                <span id="showroom-vehicle-profile" class="showroom-kicker">Vehicle profile</span>
+                                <h1 id="showroom-vehicle-name">Vehicle</h1>
+                            </div>
+                            <button id="vehicle-next" class="vehicle-nav" type="button" aria-label="Véhicule suivant">›</button>
                         </div>
-                        <button id="vehicle-next" class="vehicle-nav" type="button" aria-label="Véhicule suivant">›</button>
+                        <div id="showroom-vehicle-stats" class="vehicle-stats" aria-label="Caractéristiques véhicule"></div>
+                        <button id="start-game" class="cyber-btn showroom-start" type="button">
+                            START ENGINE
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 0.5rem;"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
                     </div>
-                    <div id="showroom-vehicle-stats" class="vehicle-stats" aria-label="Caractéristiques véhicule"></div>
                 </section>
 
                 <section class="showroom-track" aria-labelledby="showroom-track-title">
@@ -109,10 +115,6 @@
                     <div id="showroom-track-preview" class="track-panel" aria-live="polite"></div>
                 </section>
             </div>
-
-            <button id="start-game" class="cyber-btn showroom-start" type="button">
-                START ENGINE
-            </button>
         </div>
 
         <!-- Pause Menu -->
