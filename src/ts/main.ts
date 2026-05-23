@@ -11,6 +11,13 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // @ts-ignore
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+export interface WorldOptions
+{
+	proceduralSeed?: number;
+	proceduralDifficulty?: string;
+	proceduralConfig?: Partial<TrackConfig>;
+}
+
 export class World
 {
 	// Three.js
@@ -61,7 +68,7 @@ export class World
 	private lastMouseX: number = 0;
 	private lastMouseY: number = 0;
 
-	constructor(carModelPath: string, levelId: string = 'default')
+	constructor(carModelPath: string, levelId: string = 'default', options: WorldOptions = {})
 	{
 		// Renderer
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -119,6 +126,8 @@ export class World
 		// Ground
 		this.createGround();
 
+		this.applyLaunchOptions(options);
+
 		// Track / level initial
 		this.setLevel(levelId);
 
@@ -141,6 +150,26 @@ export class World
 	public setDebugInput(enabled: boolean): void
 	{
 		this.debugInput = enabled;
+	}
+
+	private applyLaunchOptions(options: WorldOptions): void
+	{
+		if (options.proceduralConfig)
+		{
+			this.proceduralConfig = {
+				...this.proceduralConfig,
+				...options.proceduralConfig,
+				sampleCount: options.proceduralConfig.sampleCount || this.proceduralConfig.sampleCount
+			};
+		}
+		if (typeof options.proceduralSeed === 'number' && Number.isFinite(options.proceduralSeed))
+		{
+			this.proceduralSeed = Math.max(0, Math.floor(options.proceduralSeed));
+		}
+		if (options.proceduralDifficulty)
+		{
+			this.currentDifficulty = options.proceduralDifficulty;
+		}
 	}
 
 	private createGround(): void
@@ -582,6 +611,20 @@ export class World
 		return this.currentDifficulty;
 	}
 
+	public getProceduralSeed(): number
+	{
+		return this.proceduralSeed;
+	}
+
+	public getProceduralTrackSummary(): { lengthMeters: number; difficulty: string; seed: number }
+	{
+		return {
+			lengthMeters: this.proceduralTrackData && this.proceduralTrackData.qaReport ? this.proceduralTrackData.qaReport.length : 0,
+			difficulty: this.currentDifficulty,
+			seed: this.proceduralSeed
+		};
+	}
+
 	public getProceduralConfig(): {
 		numControlPoints: number;
 		baseRadius: number;
@@ -913,3 +956,4 @@ export class World
 // Export for external use
 export { SimpleCar } from './vehicles/SimpleCar';
 export * as AppStorage from './core/AppStorage';
+export { MainMenuController } from './ui/menu/MainMenuController';

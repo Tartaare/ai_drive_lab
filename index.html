@@ -52,6 +52,11 @@
 
         <!-- Main Menu -->
         <div id="main-menu" class="menu-overlay hidden">
+            <div class="showroom-brand" aria-label="APEX Physics Driving Simulation">
+                <span class="showroom-brand__mark">APEX</span>
+                <span class="showroom-brand__line">Physics Driving Simulation</span>
+            </div>
+
             <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Activer le thème clair"
                 aria-pressed="false">
                 <span class="theme-toggle__track" aria-hidden="true">
@@ -71,24 +76,43 @@
                 </span>
             </button>
 
-            <div class="title-container">
-                <div class="main-title">APEX</div>
-                <div class="subtitle">PHYSICS DRIVING SIMULATION</div>
+            <select id="main-menu-level-select" hidden aria-hidden="true" tabindex="-1">
+                <option value="default">GRAND PRIX CIRCUIT</option>
+                <option value="procedural">INFINITE PROCEDURAL</option>
+            </select>
+
+            <div class="showroom-shell">
+                <section class="showroom-modes" aria-labelledby="showroom-modes-title">
+                    <span class="showroom-kicker">Drive mode</span>
+                    <h2 id="showroom-modes-title">Session</h2>
+                    <div id="showroom-mode-list" class="showroom-mode-list"></div>
+                </section>
+
+                <section class="showroom-vehicle" aria-labelledby="showroom-vehicle-name">
+                    <div id="vehicle-preview-stage" class="vehicle-stage">
+                        <div id="vehicle-preview-status" class="vehicle-stage__status" role="status" aria-live="polite"></div>
+                    </div>
+                    <div class="vehicle-selector">
+                        <button id="vehicle-prev" class="vehicle-nav" type="button" aria-label="Véhicule précédent">‹</button>
+                        <div class="vehicle-title">
+                            <span id="showroom-vehicle-profile" class="showroom-kicker">Vehicle profile</span>
+                            <h1 id="showroom-vehicle-name">Vehicle</h1>
+                        </div>
+                        <button id="vehicle-next" class="vehicle-nav" type="button" aria-label="Véhicule suivant">›</button>
+                    </div>
+                    <div id="showroom-vehicle-stats" class="vehicle-stats" aria-label="Caractéristiques véhicule"></div>
+                </section>
+
+                <section class="showroom-track" aria-labelledby="showroom-track-title">
+                    <span class="showroom-kicker">Circuit</span>
+                    <h2 id="showroom-track-title">Track preview</h2>
+                    <div id="showroom-track-preview" class="track-panel" aria-live="polite"></div>
+                </section>
             </div>
 
-            <div class="menu-grid">
-                <div style="position: relative;">
-                    <label class="slider-label" style="position: absolute; top: -20px; left: 0;">SELECT TRACK</label>
-                    <select id="main-menu-level-select" class="cyber-select">
-                        <option value="default">GRAND PRIX CIRCUIT</option>
-                        <option value="procedural">INFINITE PROCEDURAL</option>
-                    </select>
-                </div>
-
-                <button id="start-game" class="cyber-btn">
-                    START ENGINE
-                </button>
-            </div>
+            <button id="start-game" class="cyber-btn showroom-start" type="button">
+                START ENGINE
+            </button>
         </div>
 
         <!-- Pause Menu -->
@@ -237,6 +261,8 @@
         // --- Core Variables ---
         let world = null;
         let gameStarted = false;
+        let showroomMenu = null;
+        let activeRunSelection = null;
 
         // --- UI Refs ---
         const ui = {
@@ -312,28 +338,21 @@
             }
             ui.themeToggle.setAttribute('aria-pressed', String(isLight));
             ui.themeToggle.setAttribute('aria-label', isLight ? 'Activer le thème sombre' : 'Activer le thème clair');
+            document.dispatchEvent(new CustomEvent('apex-theme-change', { detail: { theme: nextTheme } }));
         }
 
         setTheme(getActiveTheme(), false);
 
         // --- Initialization ---
         window.addEventListener('load', () => {
-            // Fake load time for immersion
-            setTimeout(() => {
+            initializeShowroomMenu().finally(() => {
                 ui.loading.classList.add('hidden');
                 ui.mainMenu.classList.remove('hidden');
-            }, 1200);
+            });
 
             // Restore persisted preferences
             const AS = SimpleCar.AppStorage;
             if (AS) {
-                AS.getPrefs().then(function(prefs) {
-                    if (!prefs) return;
-                    if (prefs.levelId && ui.mainLevelSelect) {
-                        ui.mainLevelSelect.value = prefs.levelId;
-                    }
-                }).catch(function() {});
-
                 AS.getTrackConfig().then(function(cfg) {
                     if (!cfg) return;
                     if (ui.sliders.numControlPoints) ui.sliders.numControlPoints.value = cfg.numControlPoints;
@@ -355,23 +374,59 @@
             }
         });
 
+        async function initializeShowroomMenu() {
+            const AS = SimpleCar.AppStorage;
+            let trackConfig = null;
+            if (AS && AS.getTrackConfig) {
+                trackConfig = await AS.getTrackConfig().catch(function() { return null; });
+            }
+            showroomMenu = new SimpleCar.MainMenuController({
+                root: ui.mainMenu,
+                getTheme: getActiveTheme,
+                initialTrackConfig: trackConfig
+            });
+            await showroomMenu.init();
+        }
+
+        function getMenuSelection() {
+            if (showroomMenu && showroomMenu.getSelection) {
+                return showroomMenu.getSelection();
+            }
+            return {
+                vehicleId: 'car_blue_small',
+                vehicleModelPath: 'car_models/car_blue_small.glb',
+                modeId: 'free_roam',
+                trackId: 'procedural',
+                levelId: 'procedural',
+                isValid: true,
+                procedural: null
+            };
+        }
+
         // --- Game Flow ---
         function startGame() {
             if (gameStarted) return;
+            const selection = getMenuSelection();
+            if (!selection.isValid) return;
             gameStarted = true;
 
-            const level = ui.mainLevelSelect.value;
+            const level = selection.levelId;
+            activeRunSelection = selection;
 
             // Dispose old if exists
             if (world && world.dispose) world.dispose();
 
             // Create World
-            world = new SimpleCar.World('car_models/car_blue.glb', level);
+            world = new SimpleCar.World(selection.vehicleModelPath, level, selection.procedural ? {
+                proceduralSeed: selection.procedural.seed,
+                proceduralDifficulty: selection.procedural.difficulty,
+                proceduralConfig: selection.procedural.config
+            } : undefined);
 
             // Persist user preferences
             var AS = SimpleCar.AppStorage;
             if (AS) {
-                AS.savePrefs({ vehicleId: 'car_blue', levelId: level, theme: getActiveTheme() }).catch(function() {});
+                AS.savePrefs({ vehicleId: selection.vehicleId, levelId: level, theme: getActiveTheme() }).catch(function() {});
             }
 
             // Track session start
@@ -397,12 +452,13 @@
             var AS = SimpleCar.AppStorage;
             if (AS && gameStarted) {
                 var dur = window._sessionStart ? Date.now() - window._sessionStart : 0;
-                var lvl = ui.mainLevelSelect ? ui.mainLevelSelect.value : 'default';
-                AS.saveSession({ circuitId: lvl, vehicleId: 'car_blue', durationMs: dur, bestLapMs: null, date: Date.now() }).catch(function() {});
+                var runSelection = activeRunSelection || getMenuSelection();
+                var lvl = runSelection.trackId || (ui.mainLevelSelect ? ui.mainLevelSelect.value : 'procedural');
+                AS.saveSession({ circuitId: lvl, vehicleId: runSelection.vehicleId, durationMs: dur, bestLapMs: null, date: Date.now() }).catch(function() {});
                 if (world && world.getProceduralConfig) {
                     var cfg = world.getProceduralConfig();
                     var diff = world.getProceduralDifficulty ? world.getProceduralDifficulty() : 'moyen';
-                    var seed = world.proceduralSeed || 0;
+                    var seed = world.getProceduralSeed ? world.getProceduralSeed() : (world.proceduralSeed || 0);
                     AS.saveTrackConfig({
                         difficulty: diff,
                         numControlPoints: cfg.numControlPoints,
@@ -417,6 +473,7 @@
             if (world && world.dispose) world.dispose();
             world = null;
             gameStarted = false;
+            activeRunSelection = null;
 
             ui.pauseMenu.classList.add('hidden');
             ui.hud.classList.add('hidden');
