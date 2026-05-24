@@ -2,8 +2,9 @@
 
 > **Physics Driving Simulation** -- Interface cockpit motorsport dark-first avec generation procedurale de circuits, physique Cannon.js et rendu Three.js.
 
-[![Build](https://img.shields.io/badge/build-webpack-blue)](https://webpack.js.org/)
-[![TypeScript](https://img.shields.io/badge/typescript-3.9.9-blue)](https://www.typescriptlang.org/)
+[![Build](https://img.shields.io/badge/build-vite-646cff)](https://vite.dev/)
+[![React](https://img.shields.io/badge/react-18.3.1-61dafb)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.4.5-blue)](https://www.typescriptlang.org/)
 [![Three.js](https://img.shields.io/badge/three.js-0.113.0-black)](https://threejs.org/)
 
 ---
@@ -28,8 +29,8 @@ APEX est une simulation de conduite 3D immersive concue comme une experience coc
 
 ### Prerequis
 
-- Node.js >= 14
-- npm >= 6
+- Node.js >= 18
+- npm >= 9
 
 ### Installation
 
@@ -42,23 +43,23 @@ npm install
 ```bash
 npm run dev
 ```
-Serveur de developpement local : `http://localhost:8080`
+Serveur de developpement local : `http://127.0.0.1:8080`
 
 ### Production
 
 ```bash
 npm run build
 ```
-Le bundle optimise est genere dans `build/simple_car.min.js`
+Le build optimise est genere dans `dist/`.
 
 ---
 
 ## Architecture du projet
 
 ```
-├── build/                    # Bundle Webpack optimise
-│   ├── assets/car.glb       # Modele 3D du vehicule
-│   └── simple_car.min.js   # Bundle principal
+├── dist/                     # Build Vite optimise
+│   ├── assets/              # Chunks JS/CSS produits par Vite
+│   └── index.html           # Entree production
 ├── src/
 │   ├── css/
 │   │   ├── style.css        # Point d'entree CSS modulaire
@@ -66,7 +67,8 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 │   │   ├── showroom/        # Shell, modes, vehicule, circuit
 │   │   └── components/      # Controles, HUD, settings, loader, favoris
 │   ├── ts/
-│   │   ├── main.ts          # Orchestration monde/scene/entrees
+│   │   ├── main.ts          # API moteur World / Three.js / Cannon.js
+│   │   ├── react/           # Shell React, showroom, HUD, settings
 │   │   ├── core/
 │   │   │   └── AppStorage.ts # Persistance IndexedDB (idb v8)
 │   │   ├── world/
@@ -91,7 +93,8 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 │   └── lib/                 # Librairies tierces (Cannon.js, shaders)
 ├── scripts/
 │   └── test-trackgen.js     # Suite de tests deterministes (406 cas)
-├── index.html               # Application principale
+├── index.html               # Shell React + theme anti-flash
+├── vite.config.mts          # Configuration Vite ESM
 ├── design_language.md       # Documentation Design System
 └── app-progress.md          # Journal des sprints
 ```
@@ -104,6 +107,7 @@ Le bundle optimise est genere dans `build/simple_car.min.js`
 |----------|-------------|
 | `npm run dev` | Serveur de developpement avec hot-reload |
 | `npm run build` | Build production optimise |
+| `npm run typecheck` | Verification TypeScript sans emission |
 | `npm run test:trackgen` | Tests de generation procedurale (406 cas) |
 | `npx tsc --noEmit` | Verification types TypeScript |
 
@@ -175,7 +179,11 @@ Couverture actuelle :
 - Validation deterministe : memes seeds = memes circuits
 
 ### Verification TypeScript
-> **Note** : `npx tsc --noEmit` est actuellement bloque par incompatibilite entre `typescript@3.9.9` et definitions `@types/node` / `undici-types` recentes. Le build Webpack fonctionne normalement.
+```bash
+npm run typecheck
+```
+
+La verification TypeScript passe avec TypeScript 5 et la configuration TSX React.
 
 ---
 
@@ -185,8 +193,9 @@ Couverture actuelle :
 |-------------|---------|-------|
 | Three.js | 0.113.0 | Rendu 3D WebGL |
 | Cannon.js | -- | Physique vehicule |
-| TypeScript | 3.9.9 | Typage statique |
-| Webpack | 4.46.0 | Bundling |
+| React | 18.3.1 | UI declarative |
+| TypeScript | 5.4.5 | Typage statique |
+| Vite | 5.4.x | Dev server et build |
 | idb | 8.0.3 | Wrapper IndexedDB |
 | Rajdhani / Inter | -- | Typographie |
 
@@ -213,6 +222,7 @@ Les sprints realises sont documentes dans `app-progress.md` :
 
 | Sprint | Date | Focus |
 |--------|------|-------|
+| react-vite-modernization | 2026-05-24 | Migration React/Vite, installation npm et validations |
 | showroom-main-menu | 2026-05-23 | Refonte menu showroom automobile avec previews 3D |
 | persistence-indexeddb | 2026-05-23 | Persistance locale via IndexedDB |
 | modular-track-architecture | 2026-05-23 | Decoupage modulaire piste (1284 -> 13 lignes facade) |

@@ -2,26 +2,28 @@
   "name": "simple-car",
   "version": "1.0.0",
   "description": "Simple car driving experience with Sketchbook physics",
-  "main": "build/simple_car.min.js",
+  "main": "src/ts/react/main.tsx",
   "scripts": {
-    "dev": "webpack-dev-server --config webpack.dev.js",
-    "build": "webpack --config webpack.prod.js",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
     "test:trackgen": "node scripts/test-trackgen.js"
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "copy-webpack-plugin": "^5.1.2",
-    "ts-loader": "^6.2.2",
-    "typescript": "^3.9.9",
-    "webpack": "^4.46.0",
-    "webpack-cli": "^3.3.12",
-    "webpack-dev-server": "^3.11.2",
-    "webpack-merge": "^4.2.2"
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.4.11"
   },
   "dependencies": {
     "idb": "^8.0.3",
     "lil-gui": "^0.21.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "three": "0.113.0"
   }
 }

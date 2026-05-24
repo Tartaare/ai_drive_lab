@@ -16,6 +16,7 @@ export interface WorldOptions
 	proceduralSeed?: number;
 	proceduralDifficulty?: string;
 	proceduralConfig?: Partial<TrackConfig>;
+	onPauseChange?: (isPaused: boolean) => void;
 }
 
 export class World
@@ -62,21 +63,37 @@ export class World
 	private isPaused: boolean = false;
 	private isDisposed: boolean = false;
 	private debugInput: boolean = false;
+	private onPauseChange?: (isPaused: boolean) => void;
 
 	// Input state
 	private mouseDown: boolean = false;
 	private lastMouseX: number = 0;
 	private lastMouseY: number = 0;
+	private readonly handleKeyDown = (event: KeyboardEvent) => this.handleKeyboard(event, true);
+	private readonly handleKeyUp = (event: KeyboardEvent) => this.handleKeyboard(event, false);
+	private readonly handleWindowBlur = () => this.releaseCarActions();
+	private readonly handleVisibilityChange = () => {
+		if (!document.hidden) return;
+		this.releaseCarActions();
+	};
+	private readonly handleMouseUp = () => {
+		this.mouseDown = false;
+	};
+	private readonly handleMouseMove = (event: MouseEvent) => this.updateMouseCamera(event);
+	private readonly handleResize = () => this.resizeRenderer();
 
 	constructor(carModelPath: string, levelId: string = 'default', options: WorldOptions = {})
 	{
+		this.onPauseChange = options.onPauseChange;
+
 		// Renderer
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });
 		this.renderer.setPixelRatio(window.devicePixelRatio);
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
 		this.renderer.shadowMap.enabled = true;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-		document.body.appendChild(this.renderer.domElement);
+		const mount = document.getElementById('game-container') || document.body;
+		mount.appendChild(this.renderer.domElement);
 
 		// Scene
 		this.scene = new THREE.Scene();
@@ -437,7 +454,7 @@ export class World
 		}
 
 		for (const body of this.proceduralKerbBodies) {
-			this.physicsWorld.removeBody(body);
+			this.physicsWorld.remove(body);
 		}
 		this.proceduralKerbBodies = [];
 	}
@@ -552,6 +569,16 @@ export class World
 	public randomizeProceduralSeed(): void
 	{
 		this.proceduralSeed = Math.floor(Math.random() * 1000000);
+		if (this.currentLevelId === 'procedural')
+		{
+			this.buildProceduralTrack();
+		}
+	}
+
+	public setProceduralSeed(seed: number): void
+	{
+		if (!Number.isFinite(seed)) return;
+		this.proceduralSeed = Math.max(0, Math.floor(seed));
 		if (this.currentLevelId === 'procedural')
 		{
 			this.buildProceduralTrack();
@@ -676,19 +703,12 @@ export class World
 	private setupEventListeners(): void
 	{
 		// Keyboard
-		document.addEventListener('keydown', (event) => this.handleKeyboard(event, true));
-		document.addEventListener('keyup', (event) => this.handleKeyboard(event, false));
+		document.addEventListener('keydown', this.handleKeyDown);
+		document.addEventListener('keyup', this.handleKeyUp);
 
-		window.addEventListener('blur', () => {
-			if (!this.car) return;
-			if (typeof (this.car as any).releaseAllActions === 'function') (this.car as any).releaseAllActions();
-		});
+		window.addEventListener('blur', this.handleWindowBlur);
 
-		document.addEventListener('visibilitychange', () => {
-			if (!this.car) return;
-			if (!document.hidden) return;
-			if (typeof (this.car as any).releaseAllActions === 'function') (this.car as any).releaseAllActions();
-		});
+		document.addEventListener('visibilitychange', this.handleVisibilityChange);
 
 		// Mouse for camera
 		this.renderer.domElement.addEventListener('mousedown', (event) => {
@@ -697,23 +717,9 @@ export class World
 			this.lastMouseY = event.clientY;
 		});
 
-		document.addEventListener('mouseup', () => {
-			this.mouseDown = false;
-		});
+		document.addEventListener('mouseup', this.handleMouseUp);
 
-		document.addEventListener('mousemove', (event) => {
-			if (this.mouseDown) {
-				const deltaX = event.clientX - this.lastMouseX;
-				const deltaY = event.clientY - this.lastMouseY;
-				
-				this.cameraTheta -= deltaX * this.cameraSensitivity;
-				this.cameraPhi += deltaY * this.cameraSensitivity;
-				this.cameraPhi = Math.max(-60, Math.min(60, this.cameraPhi));
-				
-				this.lastMouseX = event.clientX;
-				this.lastMouseY = event.clientY;
-			}
-		});
+		document.addEventListener('mousemove', this.handleMouseMove);
 
 		// Mouse wheel for zoom
 		this.renderer.domElement.addEventListener('wheel', (event) => {
@@ -722,11 +728,34 @@ export class World
 		});
 
 		// Window resize
-		window.addEventListener('resize', () => {
-			this.camera.aspect = window.innerWidth / window.innerHeight;
-			this.camera.updateProjectionMatrix();
-			this.renderer.setSize(window.innerWidth, window.innerHeight);
-		});
+		window.addEventListener('resize', this.handleResize);
+	}
+
+	private releaseCarActions(): void
+	{
+		if (!this.car) return;
+		if (typeof (this.car as any).releaseAllActions === 'function') (this.car as any).releaseAllActions();
+	}
+
+	private updateMouseCamera(event: MouseEvent): void
+	{
+		if (!this.mouseDown) return;
+		const deltaX = event.clientX - this.lastMouseX;
+		const deltaY = event.clientY - this.lastMouseY;
+
+		this.cameraTheta -= deltaX * this.cameraSensitivity;
+		this.cameraPhi += deltaY * this.cameraSensitivity;
+		this.cameraPhi = Math.max(-60, Math.min(60, this.cameraPhi));
+
+		this.lastMouseX = event.clientX;
+		this.lastMouseY = event.clientY;
+	}
+
+	private resizeRenderer(): void
+	{
+		this.camera.aspect = window.innerWidth / window.innerHeight;
+		this.camera.updateProjectionMatrix();
+		this.renderer.setSize(window.innerWidth, window.innerHeight);
 	}
 
 	private handleKeyboard(event: KeyboardEvent, pressed: boolean): void
@@ -838,6 +867,7 @@ export class World
 		if (this.isDisposed) return;
 		this.isPaused = !this.isPaused;
 		if (this.isPaused && this.car && typeof (this.car as any).releaseAllActions === 'function') (this.car as any).releaseAllActions();
+		if (this.onPauseChange) this.onPauseChange(this.isPaused);
 
 		const pauseOverlay = document.getElementById('pause-overlay');
 		if (pauseOverlay)
@@ -874,6 +904,15 @@ export class World
 		if (this.isDisposed) return;
 		this.isDisposed = true;
 		this.isPaused = false;
+		if (this.onPauseChange) this.onPauseChange(false);
+
+		document.removeEventListener('keydown', this.handleKeyDown);
+		document.removeEventListener('keyup', this.handleKeyUp);
+		window.removeEventListener('blur', this.handleWindowBlur);
+		document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+		document.removeEventListener('mouseup', this.handleMouseUp);
+		document.removeEventListener('mousemove', this.handleMouseMove);
+		window.removeEventListener('resize', this.handleResize);
 
 		const pauseOverlay = document.getElementById('pause-overlay');
 		if (pauseOverlay)

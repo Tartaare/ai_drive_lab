@@ -3,7 +3,7 @@ export {
     TRACK_EDGE_LINE_WIDTH_METERS,
     defaultTrackConfig
 } from './track/trackTypes';
-export {
+export type {
     RejectionReason,
     QAReport,
     TrackConfig,

@@ -1,3 +1,47 @@
+# SPRINT react-vite-modernization — Migration React/Vite installable
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `index.html`
+- `package.json`
+- `package-lock.json`
+- `tsconfig.json`
+- `vite.config.mts`
+- `src/ts/main.ts`
+- `src/ts/react/App.tsx`
+- `src/ts/react/main.tsx`
+- `src/ts/react/types.ts`
+- `src/ts/react/components/Showroom.tsx`
+- `src/ts/react/components/VehiclePreviewStage.tsx`
+- `src/ts/react/components/TrackMiniature.tsx`
+- `src/ts/react/components/Hud.tsx`
+- `src/ts/react/components/SettingsPanel.tsx`
+- `src/ts/world/ProceduralTrack.ts`
+- `src/ts/world/track/trackGeometry.ts`
+- `README.md`
+
+# Validation :
+- `npm install` : succes apres regeneration du lockfile npm 10 aligne avec React, ReactDOM, Vite, plugin React et TypeScript 5.
+- `index.html` est reduit au shell React `#root`, au script anti-flash theme et a l'entree `/src/ts/react/main.tsx`.
+- L'UI principale est montee par React : loading, showroom, preview vehicule 3D, preview piste, HUD, pause et panneau procedural.
+- `World` reste hors React et expose un contrat runtime plus propre : montage dans `#game-container`, callback pause, nettoyage explicite des listeners, seed procedural chargeable et `dispose()`.
+- Vite transforme explicitement le bundle CommonJS local `src/lib/cannon/cannon.js`, ce qui supprime les warnings Rollup d'exports Cannon manquants.
+- Le build Vite separe les chunks `react`, `three`, `cannon` et application pour ameliorer la mise en cache et eviter un bundle monolithique.
+- Correction TypeScript Three r113 : `vertexColors` utilise `THREE.VertexColors`.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+- `npx tsc --noEmit` : succes.
+- Dev server local `http://127.0.0.1:8080/` : reponse HTTP `200`, entree React presente, module `main.tsx` servi en `200`.
+
+# Risques restants :
+- La validation navigateur automatisee visuelle n'a pas pu etre pilotee dans cette session car le plugin Browser etait present mais l'outil `node_repl js` requis n'etait pas expose.
+- La migration conserve des controles DOM internes dans `World` et `VehiclePreview`; la prochaine etape doit reduire progressivement ces dependances sans casser la simulation.
+- Le chunk Three.js reste naturellement volumineux pour une simulation WebGL ; il est isole en cache vendor, mais un lazy loading plus fin pourra etre etudie si le temps de premier chargement devient critique.
+- Une validation manuelle desktop/mobile reste recommandee sur le carousel vehicule, Start Engine, pause Escape, F3 debug, sliders procedural et favoris IndexedDB.
+
 # SPRINT showroom-carousel-swap-refine — Carousel 3D swap sans flash
 
 # Date : 2026-05-24

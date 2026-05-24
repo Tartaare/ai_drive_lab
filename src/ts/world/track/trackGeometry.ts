@@ -122,7 +122,7 @@ export function createTrackObject(trackData: TrackData): THREE.Group {
         const leftKerbGeom = buildKerbGeometry(trackData.leftBorder, trackData.centerPoints, trackData.kerbs.left);
         if (leftKerbGeom) {
             const kerbMat = new THREE.MeshStandardMaterial({
-                vertexColors: true,
+                vertexColors: THREE.VertexColors,
                 side: THREE.DoubleSide,
                 roughness: 0.65,
                 metalness: 0.1
@@ -136,7 +136,7 @@ export function createTrackObject(trackData: TrackData): THREE.Group {
         const rightKerbGeom = buildKerbGeometry(trackData.rightBorder, trackData.centerPoints, trackData.kerbs.right);
         if (rightKerbGeom) {
             const kerbMat = new THREE.MeshStandardMaterial({
-                vertexColors: true,
+                vertexColors: THREE.VertexColors,
                 side: THREE.DoubleSide,
                 roughness: 0.65,
                 metalness: 0.1
