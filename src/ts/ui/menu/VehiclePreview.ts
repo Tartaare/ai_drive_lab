@@ -47,6 +47,7 @@ export class VehiclePreview {
     private readonly scene: THREE.Scene;
     private readonly camera: THREE.PerspectiveCamera;
     private reflector!: any;
+    private shadowCatcher!: THREE.Mesh;
     private readonly loader = new GLTFLoader();
     private readonly modelCache: { [path: string]: Promise<CachedVehicleModel> } = {};
     private static readonly SWAP_DURATION_MS = 520;
@@ -145,6 +146,8 @@ export class VehiclePreview {
         cameraElevation: number;
         cameraDistance: number;
         cameraHeight: number;
+        reflector: any;
+        shadowCatcher: THREE.Mesh;
     } {
         const self = this;
         return {
@@ -158,7 +161,9 @@ export class VehiclePreview {
             get cameraDistance() { return self.cameraDistance; },
             set cameraDistance(v: number) { self.setCameraDistance(v / 11.5); },
             get cameraHeight() { return self.cameraHeight; },
-            set cameraHeight(v: number) { self.cameraHeight = v; self.applyCameraOrbit(); }
+            set cameraHeight(v: number) { self.cameraHeight = v; self.applyCameraOrbit(); },
+            reflector: this.reflector,
+            shadowCatcher: this.shadowCatcher
         };
     }
 
@@ -212,14 +217,14 @@ export class VehiclePreview {
         this.reflector.position.y = 0;
         this.scene.add(this.reflector);
 
-        const shadowCatcher = new THREE.Mesh(
+        this.shadowCatcher = new THREE.Mesh(
             new THREE.PlaneGeometry(80, 80),
             new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.28 })
         );
-        shadowCatcher.rotation.x = -Math.PI / 2;
-        shadowCatcher.position.y = 0.018;
-        shadowCatcher.receiveShadow = true;
-        this.scene.add(shadowCatcher);
+        this.shadowCatcher.rotation.x = -Math.PI / 2;
+        this.shadowCatcher.position.y = 0.018;
+        this.shadowCatcher.receiveShadow = true;
+        this.scene.add(this.shadowCatcher);
     }
 
     private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {

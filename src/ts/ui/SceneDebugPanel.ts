@@ -26,6 +26,8 @@ export interface SceneDebugSource
 	cameraElevation?: number;
 	cameraDistance?: number;
 	cameraHeight?: number;
+	reflector?: any;
+	shadowCatcher?: THREE.Mesh;
 }
 
 export class SceneDebugPanel
@@ -85,7 +87,7 @@ export class SceneDebugPanel
 		this.buildLightsFolder(s);
 		if (s.dayNight) this.buildDayNightFolder(s);
 		this.buildFogFolder(s);
-		this.buildMaterialsFolder(s);
+		this.buildFloorFolder(s);
 		this.buildShadowFolder(s);
 	}
 
@@ -205,28 +207,51 @@ export class SceneDebugPanel
 		f.close();
 	}
 
-	/* ── Materials (auto-discovered meshes) ───── */
-	private buildMaterialsFolder(s: SceneDebugSource): void
+	/* ── Floor (reflector + shadow catcher) ───── */
+	private buildFloorFolder(s: SceneDebugSource): void
 	{
-		const meshes = this.collectStandardMeshes(s.scene);
-		if (meshes.length === 0) return;
-		const f = this.gui!.addFolder('Materials');
+		const reflector = s.reflector;
+		const catcher = s.shadowCatcher;
+		if (!reflector && !catcher) return;
+		const f = this.gui!.addFolder('Floor');
 
-		meshes.forEach((entry) =>
+		if (reflector && reflector.material && reflector.material.uniforms)
 		{
-			const sub = f.addFolder(entry.name);
-			sub.add(entry.mat, 'roughness', 0, 1, 0.01).name('Roughness');
-			sub.add(entry.mat, 'metalness', 0, 1, 0.01).name('Metalness');
-			sub.addColor({ color: '#' + entry.mat.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
-			{
-				entry.mat.color.set(v);
-			});
-			if (entry.mesh.receiveShadow !== undefined) sub.add(entry.mesh, 'receiveShadow').name('Receive Shadow');
-			if (entry.mesh.castShadow !== undefined) sub.add(entry.mesh, 'castShadow').name('Cast Shadow');
-			sub.close();
-		});
+			const uniforms = reflector.material.uniforms;
+			const sub = f.addFolder('Reflector');
 
-		f.close();
+			if (uniforms['color'])
+			{
+				const c = uniforms['color'].value as THREE.Color;
+				sub.addColor({ color: '#' + c.getHexString() }, 'color').name('Tint').onChange((v: string) =>
+				{
+					c.set(v);
+				});
+			}
+
+			if (uniforms['opacity'] !== undefined)
+			{
+				sub.add(uniforms['opacity'], 'value', 0, 1, 0.01).name('Opacity');
+			}
+
+			sub.add(reflector, 'visible').name('Visible');
+			sub.open();
+		}
+
+		if (catcher)
+		{
+			const mat = catcher.material as THREE.ShadowMaterial;
+			const sub = f.addFolder('Shadow Catcher');
+			sub.add(mat, 'opacity', 0, 1, 0.01).name('Opacity');
+			sub.addColor({ color: '#' + mat.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
+			{
+				mat.color.set(v);
+			});
+			sub.add(catcher, 'visible').name('Visible');
+			sub.close();
+		}
+
+		f.open();
 	}
 
 	/* ── Shadow Camera ────────────────────────── */
@@ -273,24 +298,6 @@ export class SceneDebugPanel
 		if ((light as any).isSpotLight) return 'Spot ' + index;
 		if ((light as any).isAmbientLight) return 'Ambient ' + index;
 		return 'Light ' + index;
-	}
-
-	private collectStandardMeshes(scene: THREE.Scene): Array<{ name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }>
-	{
-		const results: Array<{ name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }> = [];
-		const seen = new Set<number>();
-		scene.traverse((child: THREE.Object3D) =>
-		{
-			const mesh = child as THREE.Mesh;
-			if (!mesh.isMesh || !mesh.material) return;
-			const mat = mesh.material as THREE.MeshStandardMaterial;
-			if (!(mat as any).isMeshStandardMaterial) return;
-			if (seen.has(mat.id)) return;
-			seen.add(mat.id);
-			const name = mesh.name || mesh.geometry.type || 'Mesh ' + mat.id;
-			results.push({ name, mesh, mat });
-		});
-		return results;
 	}
 
 	private findFirstShadowCaster(scene: THREE.Scene): THREE.DirectionalLight | null
