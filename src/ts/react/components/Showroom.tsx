@@ -1,12 +1,12 @@
-import { CSSProperties, MutableRefObject, useMemo } from 'react';
+import { MutableRefObject, useMemo } from 'react';
 import { GAME_MODES, TRACKS, VEHICLES, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
-import { VehiclePreview } from '../../ui/menu/VehiclePreview';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
 import { getProceduralLength, TrackMiniature } from './TrackMiniature';
 import { VehiclePreviewStage } from './VehiclePreviewStage';
 import { AnimatedNumber } from './AnimatedNumber';
 import { AnimatedStatBar } from './AnimatedStatBar';
+import { ShowroomVehicleHandle } from './ShowroomVehicleCanvas';
 
 interface ShowroomProps {
     theme: ThemeName;
@@ -18,7 +18,7 @@ interface ShowroomProps {
     proceduralConfig: TrackConfig;
     proceduralSeed: number;
     proceduralDifficulty: string;
-    previewRef: MutableRefObject<VehiclePreview | null>;
+    previewRef: MutableRefObject<ShowroomVehicleHandle | null>;
     onThemeToggle: () => void;
     onModeSelect: (modeId: GameModeDefinition['id']) => void;
     onVehicleChange: (direction: -1 | 1) => void;
@@ -108,7 +108,6 @@ function VehicleStats({ vehicle, previousVehicle }: { vehicle: VehicleDefinition
                 <AnimatedStatBar 
                     value={stat.value} 
                     maxValue={stat.max} 
-                    previousValue={previous?.value}
                 />
                 <AnimatedNumber 
                     value={stat.value} 

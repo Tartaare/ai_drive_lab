@@ -5,7 +5,6 @@
 @import './showroom/_modes.css';
 @import './showroom/_vehicle.css';
 @import './showroom/_track.css';
-@import './components/_legacy-menu.css';
 @import './components/_controls.css';
 @import './components/_theme-toggle.css';
 @import './components/_hud.css';

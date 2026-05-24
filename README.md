@@ -5,7 +5,7 @@
 [![Build](https://img.shields.io/badge/build-vite-646cff)](https://vite.dev/)
 [![React](https://img.shields.io/badge/react-18.3.1-61dafb)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/typescript-5.4.5-blue)](https://www.typescriptlang.org/)
-[![Three.js](https://img.shields.io/badge/three.js-0.113.0-black)](https://threejs.org/)
+[![Three.js](https://img.shields.io/badge/three.js-0.159.0-black)](https://threejs.org/)
 
 ---
 
@@ -15,7 +15,7 @@ APEX est une simulation de conduite 3D immersive concue comme une experience coc
 
 ### Caracteristiques principales
 
-- **Showroom automobile** -- Menu principal avec preview vehicule 3D et circuit top-down
+- **Showroom automobile** -- Menu principal avec preview vehicule 3D glossy Drei et circuit top-down
 - **Conduite physique** -- Simulation Cannon.js avec vehicule realiste
 - **Circuits proceduraux** -- Generation infinie avec parametres configurables
 - **Design System APEX** -- Interface cockpit motorsport, dark-first
@@ -82,14 +82,10 @@ Le build optimise est genere dans `dist/`.
 │   │   │       ├── trackKerbs.ts       # Bordures et vibreurs
 │   │   │       └── trackSpatial.ts     # Helpers spatiaux
 │   │   ├── vehicles/        # Vehicule, roues, modeles
-│   │   └── ui/              # Composants interface
-│   │       └── menu/        # Menu showroom automobile
-│   │           ├── MainMenuController.ts    # Controller menu principal
-│   │           ├── VehiclePreview.ts        # Preview vehicule 3D
-│   │           ├── vehiclePreviewScene.ts   # Scene statique preview vehicule
-│   │           ├── ProceduralTrackPreview.ts # Preview circuit top-down
-│   │           ├── catalog.ts               # Catalogue vehicules
-│   │           └── renderers.ts             # Renderers UI
+│   │   └── ui/              # Helpers UI partages
+│   │       ├── SceneDebugPanel.ts # Panneau debug F3
+│   │       └── menu/
+│   │           └── catalog.ts     # Catalogue vehicules, modes et circuits
 │   └── lib/                 # Librairies tierces (Cannon.js, shaders)
 ├── scripts/
 │   └── test-trackgen.js     # Suite de tests deterministes (406 cas)
@@ -191,7 +187,9 @@ La verification TypeScript passe avec TypeScript 5 et la configuration TSX React
 
 | Technologie | Version | Usage |
 |-------------|---------|-------|
-| Three.js | 0.113.0 | Rendu 3D WebGL |
+| Three.js | 0.159.0 | Rendu 3D WebGL |
+| React Three Fiber | 8.17.x | Scene 3D React du showroom |
+| Drei | 9.122.x | Sol glossy `MeshReflectorMaterial` et environnement showroom |
 | Cannon.js | -- | Physique vehicule |
 | React | 18.3.1 | UI declarative |
 | TypeScript | 5.4.5 | Typage statique |

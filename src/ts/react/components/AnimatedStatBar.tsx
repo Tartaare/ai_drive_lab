@@ -3,7 +3,6 @@ import { CSSProperties, useEffect, useState } from 'react';
 interface AnimatedStatBarProps {
     value: number;
     maxValue: number;
-    previousValue?: number;
     duration?: number;
     className?: string;
 }
@@ -11,7 +10,6 @@ interface AnimatedStatBarProps {
 export function AnimatedStatBar({ 
     value, 
     maxValue, 
-    previousValue, 
     duration = 400, 
     className 
 }: AnimatedStatBarProps): JSX.Element {

@@ -28,6 +28,17 @@
     touch-action: none;
 }
 
+.vehicle-stage__r3f {
+    position: absolute;
+    inset: 0;
+    outline: none;
+}
+
+.vehicle-stage__r3f:focus-visible {
+    outline: 1px solid var(--c-motorsport);
+    outline-offset: -6px;
+}
+
 .vehicle-stage__canvas:active {
     cursor: grabbing;
 }

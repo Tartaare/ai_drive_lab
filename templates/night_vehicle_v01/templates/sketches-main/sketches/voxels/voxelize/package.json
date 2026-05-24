@@ -1,0 +1,26 @@
+{
+    "name": "@sketches/voxelize",
+    "private": true,
+    "sketch": {
+        "title": "Simple Voxels - Voxelize",
+        "tags": ["voxels"]
+    },
+    "scripts": {
+        "dev": "vite dev",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "@sketches/common": "workspace:*",
+        "@react-three/drei": "^10.7.6",
+        "@react-three/fiber": "^9.3.0",
+        "@sketches/simple-voxels-lib": "workspace:*",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
+        "three": "^0.181.1"
+    },
+    "devDependencies": {
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.1",
+        "@types/three": "^0.181.0"
+    }
+}

@@ -1,0 +1,5 @@
+packages:
+  - 'container'
+  - 'common'
+  - 'sketches/*'
+  - 'sketches/**/*'

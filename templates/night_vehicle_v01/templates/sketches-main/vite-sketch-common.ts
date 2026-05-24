@@ -1,0 +1,59 @@
+import react from '@vitejs/plugin-react'
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import type { UserConfig } from 'vite'
+
+function findRootPackageDirectory(currentDirectory: string) {
+    while (currentDirectory !== path.parse(currentDirectory).root) {
+        const packageJsonPath = path.join(currentDirectory, 'package.json')
+
+        if (fs.existsSync(packageJsonPath)) {
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+
+            if (packageJson.name === 'sketches') {
+                return currentDirectory
+            }
+        }
+
+        currentDirectory = path.dirname(currentDirectory)
+    }
+
+    throw new Error('root package.json with name "sketches" not found')
+}
+
+export const createCommonConfig = (currentDirectory: string) => {
+    const rootPackageDirectoryDirectory = findRootPackageDirectory(currentDirectory)
+
+    return {
+        plugins: [
+            react(),
+            {
+                name: 'configure-server',
+                configureServer: (server) => {
+                    server.middlewares.use((_req, res, next) => {
+                        // required for SharedArrayBuffer
+                        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
+                        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
+
+                        // required for iframe embed
+                        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+
+                        next()
+                    })
+                },
+            },
+        ],
+        build: {
+            target: 'esnext',
+        },
+        worker: {
+            format: 'es',
+        },
+        // relative
+        base: './',
+        server: {
+            // don't try to use next available port, exit if port is taken
+            strictPort: true,
+        },
+    } satisfies UserConfig
+}

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { KERB_WIDTH_METERS, TRACK_EDGE_LINE_WIDTH_METERS, TrackData } from './trackTypes';
+import { TRACK_EDGE_LINE_WIDTH_METERS, TrackData } from './trackTypes';
 import { buildKerbGeometry } from './trackKerbs';
 
 export function computeTrackBorders(
@@ -122,7 +122,7 @@ export function createTrackObject(trackData: TrackData): THREE.Group {
         const leftKerbGeom = buildKerbGeometry(trackData.leftBorder, trackData.centerPoints, trackData.kerbs.left);
         if (leftKerbGeom) {
             const kerbMat = new THREE.MeshStandardMaterial({
-                vertexColors: THREE.VertexColors,
+                vertexColors: true,
                 side: THREE.DoubleSide,
                 roughness: 0.65,
                 metalness: 0.1
@@ -136,7 +136,7 @@ export function createTrackObject(trackData: TrackData): THREE.Group {
         const rightKerbGeom = buildKerbGeometry(trackData.rightBorder, trackData.centerPoints, trackData.kerbs.right);
         if (rightKerbGeom) {
             const kerbMat = new THREE.MeshStandardMaterial({
-                vertexColors: THREE.VertexColors,
+                vertexColors: true,
                 side: THREE.DoubleSide,
                 roughness: 0.65,
                 metalness: 0.1

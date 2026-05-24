@@ -8,7 +8,7 @@ export interface CurvatureMetrics {
     brakingZoneCount: number;
 }
 
-export function analyzeCurvature(points: THREE.Vector3[], spacing: number): CurvatureMetrics {
+export function analyzeCurvature(points: THREE.Vector3[], _spacing: number): CurvatureMetrics {
     const n = points.length;
     let minRadius = Infinity;
     let maxCurvature = 0;

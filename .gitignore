@@ -1,7 +1,7 @@
 .DS_Store
 node_modules/
 dist/
-templates/
+#templates/
 
 docs/
 .agents/
@@ -10,5 +10,4 @@ car_models/*.glb
 3D_models/
 
 
-
-# notes.md
+notes.md

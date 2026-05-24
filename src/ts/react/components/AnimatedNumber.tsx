@@ -8,11 +8,9 @@ interface AnimatedNumberProps {
 
 export function AnimatedNumber({ value, duration = 400, className }: AnimatedNumberProps): JSX.Element {
     const [displayValue, setDisplayValue] = useState(value);
-    const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
         if (displayValue !== value) {
-            setIsAnimating(true);
             const startTime = performance.now();
             const startValue = displayValue;
             const endValue = value;
@@ -30,8 +28,6 @@ export function AnimatedNumber({ value, duration = 400, className }: AnimatedNum
 
                 if (progress < 1) {
                     requestAnimationFrame(animate);
-                } else {
-                    setIsAnimating(false);
                 }
             };
 

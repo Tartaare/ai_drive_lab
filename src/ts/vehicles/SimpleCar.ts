@@ -239,7 +239,6 @@ export class SimpleCar extends THREE.Object3D {
 	public update(timeStep: number): void {
 		const brakeForce = 3000;
 		const reverseBrakeSpeedThreshold = 0.5;
-		const stopSpeedThreshold = 0.25;
 		const engineBrakeFadeSpeed = 0.4;
 
 		// Update position from physics
@@ -282,7 +281,6 @@ export class SimpleCar extends THREE.Object3D {
 			this.airSpinTimer = 0;
 		}
 
-		const maxGears = this.gearRatios.length;
 		const absSpeed = Math.abs(this.speed);
 
 		// Reverse key behavior: brake on 4 wheels when moving forward, reverse only near stop

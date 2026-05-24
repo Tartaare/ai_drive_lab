@@ -1,0 +1,15 @@
+{
+    "name": "@sketches/bsp-dungeon",
+    "private": true,
+    "sketch": {
+        "title": "Procedural Generation - BSP Dungeon",
+        "tags": ["procedural-generation"],
+        "dev": {
+            "secure": false
+        }
+    },
+    "scripts": {
+        "dev": "bun run ../../../dev/static-server.ts ./src",
+        "build": "rm -rf ./dist && mkdir dist && cp src/* dist/"
+    }
+}
