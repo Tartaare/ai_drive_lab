@@ -1,17 +1,19 @@
 ### NOTES ###
 
-Nouvelle branche pour cette mission (respecte les règles):
+Nouvelle branche pour cette mission (respecte les règles).
+
+Dans menu principal > scene 3D:
+
+Pour l'éclairage on va simplement utiliser un plafond de meme taille que le sol placé au dessus de la voiture (assez haut pour ne pas être visible au premier plan). Il aura une propriété emissive afin d'éclairer uniformément la scène comme une lumière studio/softbox géante.
+
+
+
+===================== DONE =====================
 
 Dans menu principal > vehicule info:
 Lors d'un changement de vehicule:
 1. Animer les scores. Il faut que les nombres défilent de la valeur précédente à la nouvelle valeur.
 2. Animer les barres de statistique: on veut un remplissage dynamique et fluide des jauges selon la différence de stats entre les deux véhicules. Il ne faut pas remplir de 0 à la nouvelle valeur à chaque changement, mais remplir/vider de la valeur actuelle jusqu'à la nouvelle valeur.
-
-
-
-
-
-===================== DONE =====================
 
 
 On travaille sur le menu principal, je te joint un screenshot du menu actuel pour que tu comprennes mieux.

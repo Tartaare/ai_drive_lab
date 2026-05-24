@@ -102,7 +102,8 @@ export class VehiclePreview {
 
     public setTheme(theme: 'dark' | 'light'): void {
         const isLight = theme === 'light';
-        this.reflector.material.uniforms['color'].value.set(isLight ? 0xa8ada6 : 0x161616);
+        // Couleurs semi-gloss: clair #e8e8e4 (defaut), sombre #1a1a1a
+        this.reflector.material.uniforms['color'].value.set(isLight ? 0xf5f5f0 : 0x1a1a1a);
     }
 
     public isTransitioning(): boolean {
@@ -242,25 +243,18 @@ export class VehiclePreview {
         rim.position.set(-4.8, 3.4, -4.8);
         this.scene.add(rim);
 
+        // Sol unique semi-gloss clair #e8e8e4
         this.reflector = new Reflector(new THREE.PlaneGeometry(80, 80) as unknown as THREE.BufferGeometry, {
             clipBias: 0.003,
             textureWidth: 1024,
             textureHeight: 1024,
-            color: new THREE.Color(0x161616),
+            color: new THREE.Color(0xe8e8e4),
             multisample: 4
         } as any);
         this.reflector.rotation.x = -Math.PI / 2;
         this.reflector.position.y = 0;
+        this.reflector.receiveShadow = true;
         this.scene.add(this.reflector);
-
-        this.shadowCatcher = new THREE.Mesh(
-            new THREE.PlaneGeometry(80, 80),
-            new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.28 })
-        );
-        this.shadowCatcher.rotation.x = -Math.PI / 2;
-        this.shadowCatcher.position.y = 0.018;
-        this.shadowCatcher.receiveShadow = true;
-        this.scene.add(this.shadowCatcher);
     }
 
     private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {
