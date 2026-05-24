@@ -5,6 +5,8 @@ import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
 import { getProceduralLength, TrackMiniature } from './TrackMiniature';
 import { VehiclePreviewStage } from './VehiclePreviewStage';
+import { AnimatedNumber } from './AnimatedNumber';
+import { AnimatedStatBar } from './AnimatedStatBar';
 
 interface ShowroomProps {
     theme: ThemeName;
@@ -99,10 +101,24 @@ function VehicleStats({ vehicle, previousVehicle }: { vehicle: VehicleDefinition
         const stat = vehicle.stats[key];
         const previous = previousVehicle ? previousVehicle.stats[key] : null;
         const delta = previous ? stat.value - previous.value : 0;
-        const ratio = Math.min(stat.value / stat.max, 1);
         const deltaClass = delta > 0 ? ' vehicle-stat__delta--up' : delta < 0 ? ' vehicle-stat__delta--down' : '';
-        const style = { '--bar-ratio': ratio.toFixed(3) } as CSSProperties;
-        return <div className="vehicle-stat" key={key}><span className="vehicle-stat__label">{stat.label}</span><div className="vehicle-stat__meter"><span className="vehicle-stat__bar" style={style}><span className="vehicle-stat__bar__fill" /></span><span className="vehicle-stat__score">{stat.value}</span></div><span className={`vehicle-stat__delta${deltaClass}`} aria-hidden="true">{delta > 0 ? '▲' : delta < 0 ? '▼' : ''}</span></div>;
+        return <div className="vehicle-stat" key={key}>
+            <span className="vehicle-stat__label">{stat.label}</span>
+            <div className="vehicle-stat__meter">
+                <AnimatedStatBar 
+                    value={stat.value} 
+                    maxValue={stat.max} 
+                    previousValue={previous?.value}
+                />
+                <AnimatedNumber 
+                    value={stat.value} 
+                    className="vehicle-stat__score"
+                />
+            </div>
+            <span className={`vehicle-stat__delta${deltaClass}`} aria-hidden="true">
+                {delta > 0 ? '▲' : delta < 0 ? '▼' : ''}
+            </span>
+        </div>;
     })}</>;
 }
 

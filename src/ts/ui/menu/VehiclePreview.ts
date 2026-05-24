@@ -73,7 +73,7 @@ export class VehiclePreview {
     private cameraDistance = 1.22;
     private cameraAzimuth = 0;
     private cameraElevation = 16;
-    private cameraHeight = 0.74;
+    private cameraHeight = -0.74;
     private debugOrbitMode = false;
     private readonly reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -543,8 +543,8 @@ export class VehiclePreview {
             return;
         }
         this.camera.up.set(0, 1, 0);
-        this.camera.position.set(0, 3.45 * this.cameraDistance, 11.5 * this.cameraDistance);
-        this.camera.lookAt(0, 0.74, 0);
+        this.camera.position.set(0, 1 * this.cameraDistance, 7.5 * this.cameraDistance);
+        this.camera.lookAt(0, 0.2, 0);
     }
 
     private applyCameraOrbit(): void {

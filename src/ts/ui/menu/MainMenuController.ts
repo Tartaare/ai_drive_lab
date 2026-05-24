@@ -12,6 +12,8 @@ import { ProceduralTrackPreview } from './ProceduralTrackPreview';
 import { createModeButton, renderVehicleStats } from './renderers';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { TextScrambler } from './TextScrambler';
+import NumberAnimator from './NumberAnimator.js';
+import { EasingFunctions } from './NumberAnimator.js';
 export interface MainMenuSelection {
     vehicleId: string;
     vehicleModelPath: string;
@@ -54,6 +56,7 @@ export class MainMenuController {
     private previousVehicle: VehicleDefinition | null = null;
     private vehicleRenderToken = 0;
     private activeTextScramblers: TextScrambler[] = [];
+    private activeNumberAnimators: NumberAnimator[] = [];
     private isVehicleTransitionLocked = false;
 
     constructor(options: MainMenuControllerOptions) {
@@ -169,7 +172,18 @@ export class MainMenuController {
         const comparisonVehicle = direction === 0 ? null : this.previousVehicle;
         this.vehicleName.textContent = vehicle.name;
         const shouldAnimateBars = direction !== 0 && this.previousVehicle !== null;
+        
+        // Clean up previous animations before rendering new vehicle
+        this.activeNumberAnimators.forEach((animator) => animator.dispose());
+        this.activeNumberAnimators = [];
+        
         renderVehicleStats(this.statList, vehicle, comparisonVehicle, shouldAnimateBars);
+        
+        // Animate scores if we're switching vehicles
+        if (shouldAnimateBars) {
+            this.animateScores();
+        }
+        
         if (this.renderedVehicleId !== vehicle.id || direction !== 0) {
             this.renderedVehicleId = vehicle.id;
             const shouldAnimateSwap = direction !== 0 && this.previousVehicle !== null;
@@ -200,6 +214,41 @@ export class MainMenuController {
     private stopVehicleTextScramble(): void {
         this.activeTextScramblers.forEach((scrambler) => scrambler.stop());
         this.activeTextScramblers = [];
+    }
+
+    private animateScores(): void {
+        // Clean up any previous animators
+        this.activeNumberAnimators.forEach((animator) => animator.dispose());
+        this.activeNumberAnimators = [];
+
+        // Find all score elements that need animation
+        const scoreElements = Array.from(this.statList.querySelectorAll('.vehicle-stat__score[data-old-value]')) as HTMLElement[];
+        
+        scoreElements.forEach((element, index) => {
+            const oldValue = parseInt(element.getAttribute('data-old-value') || '0', 10);
+            const newValue = parseInt(element.getAttribute('data-new-value') || '0', 10);
+            
+            // Skip if values are the same
+            if (oldValue === newValue) {
+                return;
+            }
+            
+            // Calculate stagger delay: 0ms, 40ms, 80ms, 120ms, 160ms, 200ms
+            const delay = index * 40;
+            
+            // Create animator with 400ms duration, ease-out easing, staggered delay
+            const animator = new NumberAnimator(
+                element,
+                oldValue,
+                newValue,
+                400, // duration matching vehicle swap
+                delay, // stagger delay
+                EasingFunctions.easeOut
+            );
+            
+            animator.start();
+            this.activeNumberAnimators.push(animator);
+        });
     }
 
     private renderTrack(): void {

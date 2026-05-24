@@ -39,11 +39,16 @@ export function renderVehicleStats(container: HTMLElement, vehicle: VehicleDefin
         const initialRatio = shouldAnimateBars && previousStat 
             ? Math.min(previousStat.value / previousStat.max, 1) 
             : ratio;
+        
+        // Initialize score with old value if animating, otherwise new value
+        const initialScoreValue = shouldAnimateBars && previousStat ? previousStat.value : stat.value;
+        const scoreDataAttr = shouldAnimateBars && previousStat ? ` data-old-value="${previousStat.value}" data-new-value="${stat.value}"` : '';
+        
         item.innerHTML =
             '<span class="vehicle-stat__label">' + stat.label + '</span>' +
             '<div class="vehicle-stat__meter">' +
                 '<span class="vehicle-stat__bar" style="--bar-ratio: ' + initialRatio.toFixed(3) + '"><span class="vehicle-stat__bar__fill"></span></span>' +
-                '<span class="vehicle-stat__score">' + stat.value + '</span>' +
+                '<span class="vehicle-stat__score"' + scoreDataAttr + '>' + initialScoreValue + '</span>' +
             '</div>' +
             '<span class="vehicle-stat__delta' + deltaClass + '" aria-hidden="true">' + deltaText + '</span>';
         container.appendChild(item);
