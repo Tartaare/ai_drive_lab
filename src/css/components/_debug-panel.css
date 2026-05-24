@@ -1,14 +1,15 @@
 /* ── Scene Debug Panel (lil-gui override) ─────────────────── */
+/* Force dark mode regardless of app theme for guaranteed contrast */
 
 .apex-debug-gui {
-    --background-color: var(--c-bg-panel);
-    --widget-color: var(--c-bg-control);
-    --text-color: var(--c-text);
+    --background-color: rgba(12, 12, 14, 0.92);
+    --widget-color: rgba(255, 255, 255, 0.06);
+    --text-color: #f0f0f0;
     --title-background-color: var(--c-motorsport);
     --title-text-color: #000;
     --focus-color: var(--c-motorsport);
-    --number-color: var(--c-motorsport);
-    --string-color: var(--c-success);
+    --number-color: #ff8a1f;
+    --string-color: #34c759;
 
     position: fixed !important;
     top: 12px !important;
@@ -16,13 +17,14 @@
     z-index: 10000 !important;
     font-family: var(--font-body) !important;
     border-radius: 8px !important;
-    border: 1px solid var(--c-border-subtle) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     backdrop-filter: blur(var(--blur-strong)) !important;
     -webkit-backdrop-filter: blur(var(--blur-strong)) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55) !important;
     overflow: hidden !important;
     max-height: calc(100vh - 24px);
     overflow-y: auto;
+    color-scheme: dark !important;
 }
 
 .apex-debug-gui .title {
@@ -38,7 +40,7 @@
 }
 
 .apex-debug-gui .children {
-    border-left: 2px solid var(--c-motorsport-dim) !important;
+    border-left: 2px solid rgba(255, 138, 31, 0.22) !important;
     margin-left: 4px;
 }
 
@@ -48,9 +50,9 @@
 
 .apex-debug-gui select {
     font-family: var(--font-body) !important;
-    background: var(--c-bg-control) !important;
-    color: var(--c-text) !important;
-    border: 1px solid var(--c-border-subtle) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #f0f0f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 3px !important;
 }
 
@@ -58,18 +60,18 @@
     font-size: 0.72rem !important;
     letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
-    color: var(--c-text-soft) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
 }
 
 .apex-debug-gui .controller.number .display {
-    color: var(--c-motorsport) !important;
+    color: #ff8a1f !important;
 }
 
 .apex-debug-gui .controller .widget input[type="text"],
 .apex-debug-gui .controller .widget input[type="number"] {
-    background: var(--c-bg-control) !important;
-    color: var(--c-text) !important;
-    border: 1px solid var(--c-border-subtle) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #f0f0f0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 3px !important;
     font-family: var(--font-body) !important;
 }
@@ -80,14 +82,14 @@
 
 .apex-debug-gui .controller .widget input[type="color"] {
     border-radius: 3px !important;
-    border: 1px solid var(--c-border-subtle) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Folder titles */
 .apex-debug-gui .lil-gui > .title {
-    background: var(--c-bg-elevated) !important;
-    border-bottom: 1px solid var(--c-border-subtle) !important;
-    color: var(--c-text) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    color: #f0f0f0 !important;
     font-family: var(--font-display) !important;
     font-size: 0.7rem !important;
     letter-spacing: 0.1em !important;
@@ -99,7 +101,7 @@
 }
 
 .apex-debug-gui::-webkit-scrollbar-thumb {
-    background: var(--c-border-subtle);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 2px;
 }
 
