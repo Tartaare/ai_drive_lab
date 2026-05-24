@@ -1,3 +1,48 @@
+# SPRINT showroom-vehicle-swap-animation — Swap 3D fluide du carousel véhicule
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/ts/ui/menu/MainMenuController.ts`
+- `src/ts/ui/menu/VehiclePreview.ts`
+- `src/css/showroom/_vehicle.css`
+
+# Validation :
+- Le showroom véhicule utilise maintenant un vrai swap 3D à double présence avec ancien modèle sortant et nouveau modèle entrant simultanément.
+- La durée de transition est fixe à `2000ms` pour les changements gauche/droite.
+- Les clics répétés sur les flèches sont verrouillés pendant la transition pour éviter les chevauchements incohérents.
+- Le fallback véhicule reste animé comme un entrant normal si le chargement GLB échoue.
+- Le mode `prefers-reduced-motion` remplace le swap glissé par un remplacement immédiat.
+- Correction de visibilité : le swap suit l’axe horizontal écran dérivé de la caméra showroom, et non l’axe monde `X` qui se lisait surtout comme un déplacement en profondeur.
+
+# Risques restants :
+- Le swap conserve une rotation commune entre ancien et nouveau véhicule pendant la transition ; une vérification visuelle reste recommandée sur tous les modèles GLB pour confirmer que leur silhouette reste lisible pendant le croisement.
+- Le verrouillage des flèches privilégie la cohérence visuelle sur la réactivité ; si une file d’attente d’inputs est souhaitée plus tard, elle devra être conçue explicitement.
+
+# SPRINT showroom-vehicle-scramble-loading — Feedback texte pendant chargement vehicule
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/ts/ui/menu/TextScrambler.ts`
+- `src/ts/ui/menu/MainMenuController.ts`
+- `src/ts/ui/menu/VehiclePreview.ts`
+
+# Validation :
+- Le message `Chargement du modèle` est retire pendant les changements de vehicule dans le showroom.
+- Le nom du vehicule ainsi que les labels et scores de stats utilisent maintenant un effet scramble pendant le chargement du GLB.
+- Le scramble se stabilise automatiquement a la fin du chargement ou sur fallback erreur.
+- Les changements rapides de vehicule sont proteges par un token de rendu pour ignorer les chargements obsoletes.
+- `npm run build` : succes.
+
+# Risques restants :
+- L'effet scramble ne couvre que les textes du bloc vehicule ; les fleches de delta restent immediates pour conserver la lisibilite comparative.
+- Une verification visuelle manuelle desktop/mobile reste recommandee pour juger la densite percue de l'animation sur machines lentes.
+
 # SPRINT modular-css-menu-preview — Modularisation CSS et preview véhicule
 
 # Date : 2026-05-23

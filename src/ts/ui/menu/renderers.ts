@@ -32,14 +32,16 @@ export function renderVehicleStats(container: HTMLElement, vehicle: VehicleDefin
         const delta = previousStat ? stat.value - previousStat.value : 0;
         const ratio = Math.min(stat.value / stat.max, 1);
         const deltaClass = delta > 0 ? ' vehicle-stat__delta--up' : delta < 0 ? ' vehicle-stat__delta--down' : '';
-        const deltaText = delta > 0 ? '▲' + delta : delta < 0 ? '▼' + Math.abs(delta) : '';
+        const deltaText = delta > 0 ? '▲' : delta < 0 ? '▼' : '';
         const item = document.createElement('div');
         item.className = 'vehicle-stat';
         item.innerHTML =
             '<span class="vehicle-stat__label">' + stat.label + '</span>' +
-            '<span class="vehicle-stat__value">' + stat.value + '/100</span>' +
-            '<span class="vehicle-stat__delta' + deltaClass + '" aria-hidden="true">' + deltaText + '</span>' +
-            '<span class="vehicle-stat__bar"><span style="transform:scaleX(' + ratio.toFixed(3) + ')"></span></span>';
+            '<div class="vehicle-stat__meter">' +
+                '<span class="vehicle-stat__bar"><span style="transform:scaleX(' + ratio.toFixed(3) + ')"></span></span>' +
+                '<span class="vehicle-stat__score">' + stat.value + '</span>' +
+            '</div>' +
+            '<span class="vehicle-stat__delta' + deltaClass + '" aria-hidden="true">' + deltaText + '</span>';
         container.appendChild(item);
     });
 }

@@ -46,18 +46,6 @@
     pointer-events: none;
 }
 
-.vehicle-stage[data-state="loading"] .vehicle-stage__status::before {
-    content: '';
-    display: inline-block;
-    width: 42px;
-    height: 2px;
-    margin-right: 0.6rem;
-    vertical-align: middle;
-    background: var(--c-motorsport);
-    box-shadow: 0 0 18px var(--c-motorsport-glow);
-    animation: loadProgress 1.2s ease-in-out infinite;
-}
-
 .vehicle-stage[data-state="loading"]::after,
 .vehicle-stage[data-state="error"]::after {
     content: '';
@@ -133,6 +121,13 @@
     transform: scale(0.94);
 }
 
+.vehicle-nav:disabled {
+    opacity: 0.38;
+    cursor: wait;
+    pointer-events: none;
+    text-shadow: none;
+}
+
 .vehicle-stats {
     width: min(680px, 100%);
     display: grid;
@@ -143,8 +138,11 @@
 
 .vehicle-stat {
     display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.35rem 0.65rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "label score"
+        "meter delta";
+    gap: 0.28rem 0.7rem;
     align-items: center;
     opacity: 0;
     transform: translateY(8px);
@@ -158,26 +156,42 @@
 .vehicle-stat:nth-child(6) { animation-delay: 0.2s; }
 
 .vehicle-stat__label {
+    grid-area: label;
     font-size: 0.58rem;
     color: var(--c-text-muted);
     letter-spacing: 0.09em;
     text-transform: uppercase;
+    line-height: 1.1;
 }
 
-.vehicle-stat__value {
+.vehicle-stat__score {
+    grid-area: score;
     font-family: var(--font-display);
     font-size: 0.9rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+    justify-self: end;
+}
+
+.vehicle-stat__meter {
+    grid-area: meter;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
 }
 
 .vehicle-stat__delta {
-    min-width: 1.6rem;
+    grid-area: delta;
+    min-width: 1rem;
     font-family: var(--font-display);
     font-size: 0.8rem;
     font-weight: 700;
     opacity: 0;
-    transform: translateY(3px);
+    transform: translateY(1px);
+    justify-self: end;
+    line-height: 1;
 }
 
 .vehicle-stat__delta--up,
@@ -195,7 +209,7 @@
 }
 
 .vehicle-stat__bar {
-    grid-column: 1 / -1;
+    flex: 1 1 auto;
     height: 2px;
     overflow: hidden;
     background: var(--c-border-subtle);
@@ -205,7 +219,7 @@
     display: block;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, var(--c-motorsport), var(--c-accent));
+    background: var(--c-motorsport);
     transform-origin: left;
 }
 

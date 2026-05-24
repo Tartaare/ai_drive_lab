@@ -5,6 +5,22 @@ import { VehicleDefinition } from './catalog';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
+export type VehiclePreviewLoadState = 'ready' | 'error' | 'stale';
+
+interface VehicleSceneNode {
+    root: THREE.Object3D;
+    mixer: THREE.AnimationMixer | null;
+}
+
+interface VehicleSwapTransition {
+    startTime: number;
+    durationMs: number;
+    direction: -1 | 1;
+    outgoing: VehicleSceneNode | null;
+    incoming: VehicleSceneNode;
+    complete: (state: VehiclePreviewLoadState) => void;
+    state: VehiclePreviewLoadState;
+}
 
 export class VehiclePreview {
     private static readonly CAMERA_DISTANCE_MIN = 0.86;
@@ -21,8 +37,11 @@ export class VehiclePreview {
     private readonly floorMaterial: THREE.MeshStandardMaterial;
     private readonly loader = new GLTFLoader();
     private readonly preloadedPaths: { [path: string]: boolean } = {};
-    private vehicleRoot: THREE.Object3D | null = null;
-    private mixer: THREE.AnimationMixer | null = null;
+    private static readonly SWAP_DURATION_MS = 2000;
+    private static readonly SWAP_OFFSET_X = 4.8;
+    private readonly screenRight = new THREE.Vector3();
+    private activeVehicle: VehicleSceneNode | null = null;
+    private transition: VehicleSwapTransition | null = null;
     private animationFrame = 0;
     private loadToken = 0;
     private rotationY = 0;
@@ -32,6 +51,7 @@ export class VehiclePreview {
     private isPointerOver = false;
     private lastTime = performance.now();
     private cameraDistance = 1.22;
+    private readonly reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     constructor(container: HTMLElement, status: HTMLElement) {
         this.container = container;
@@ -68,39 +88,31 @@ export class VehiclePreview {
         this.floorMaterial.emissiveIntensity = theme === 'light' ? 0.025 : 0.08;
     }
 
-    public setVehicle(vehicle: VehicleDefinition, direction: -1 | 0 | 1): void {
+    public isTransitioning(): boolean {
+        return this.transition !== null;
+    }
+
+    public setVehicle(vehicle: VehicleDefinition, direction: -1 | 0 | 1): Promise<VehiclePreviewLoadState> {
         const token = ++this.loadToken;
-        this.setState('loading', 'Chargement du modèle');
-        this.clearVehicle();
-
-        this.loader.load(vehicle.modelPath, (gltf: any) => {
-            if (token !== this.loadToken) return;
-            const model = gltf.scene as THREE.Object3D;
-            this.prepareModel(model);
-            model.position.x = direction * 2.2;
-            model.traverse((child: any) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
+        this.setState('loading', '');
+        return new Promise((resolve) => {
+            this.loader.load(vehicle.modelPath, (gltf: any) => {
+                if (token !== this.loadToken) {
+                    this.disposeLoadedSceneNode(this.createSceneNode(gltf.scene as THREE.Object3D, gltf.animations || []));
+                    resolve('stale');
+                    return;
                 }
+                const incoming = this.createSceneNode(gltf.scene as THREE.Object3D, gltf.animations || []);
+                this.mountIncomingVehicle(incoming, direction, resolve, 'ready');
+            }, undefined, () => {
+                if (token !== this.loadToken) {
+                    resolve('stale');
+                    return;
+                }
+                const fallback = this.createFallbackNode();
+                this.mountIncomingVehicle(fallback, direction, resolve, 'error');
+                this.setState('error', 'Modèle indisponible');
             });
-            this.scene.add(model);
-            this.vehicleRoot = model;
-            this.rotationY = 0;
-
-            if (gltf.animations && gltf.animations.length > 0) {
-                this.mixer = new THREE.AnimationMixer(model);
-                this.mixer.clipAction(gltf.animations[0]).play();
-            }
-
-            requestAnimationFrame(() => {
-                if (this.vehicleRoot) this.vehicleRoot.position.x = 0;
-            });
-            this.setState('ready', '');
-        }, undefined, () => {
-            if (token !== this.loadToken) return;
-            this.showFallback();
-            this.setState('error', 'Modèle indisponible');
         });
     }
 
@@ -114,7 +126,8 @@ export class VehiclePreview {
 
     public dispose(): void {
         cancelAnimationFrame(this.animationFrame);
-        this.clearVehicle();
+        this.abortTransition();
+        this.clearActiveVehicle();
         this.renderer.dispose();
         if (this.renderer.domElement.parentElement) {
             this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
@@ -135,7 +148,7 @@ export class VehiclePreview {
         this.scene.add(floor);
     }
 
-    private prepareModel(model: THREE.Object3D): void {
+    private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {
         const box = new THREE.Box3().setFromObject(model);
         const size = new THREE.Vector3();
         const center = new THREE.Vector3();
@@ -152,9 +165,23 @@ export class VehiclePreview {
         const scale = THREE.MathUtils.clamp(footprintScale * 0.82 + heightScale * 0.18, 0.2, 6);
         model.scale.setScalar(scale);
         model.position.set(-center.x * scale, -box.min.y * scale + 0.04, -center.z * scale);
+        model.traverse((child: any) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+        const root = new THREE.Group();
+        root.add(model);
+        let mixer: THREE.AnimationMixer | null = null;
+        if (animations.length > 0) {
+            mixer = new THREE.AnimationMixer(model);
+            mixer.clipAction(animations[0]).play();
+        }
+        return { root, mixer };
     }
 
-    private showFallback(): void {
+    private createFallbackNode(): VehicleSceneNode {
         const group = new THREE.Group();
         const body = new THREE.Mesh(
             new THREE.BoxGeometry(2.8, 0.52, 1.15),
@@ -162,23 +189,126 @@ export class VehiclePreview {
         );
         body.position.y = 0.55;
         group.add(body);
-        this.scene.add(group);
-        this.vehicleRoot = group;
+        return { root: group, mixer: null };
     }
 
-    private clearVehicle(): void {
-        if (this.mixer) this.mixer.stopAllAction();
-        this.mixer = null;
-        if (!this.vehicleRoot) return;
-        this.scene.remove(this.vehicleRoot);
-        this.vehicleRoot.traverse((child: any) => {
+    private mountIncomingVehicle(
+        incoming: VehicleSceneNode,
+        direction: -1 | 0 | 1,
+        complete: (state: VehiclePreviewLoadState) => void,
+        state: VehiclePreviewLoadState
+    ): void {
+        this.abortTransition();
+        const outgoing = this.activeVehicle;
+        this.activeVehicle = null;
+        this.scene.add(incoming.root);
+        this.rotationY = 0;
+        if (direction === 0 || !outgoing || this.reduceMotionQuery.matches) {
+            if (outgoing) this.disposeSceneNode(outgoing);
+            incoming.root.position.set(0, 0, 0);
+            this.activeVehicle = incoming;
+            this.setState('ready', '');
+            complete(state);
+            return;
+        }
+        outgoing.root.position.set(0, 0, 0);
+        this.setNodeSwapOffset(incoming.root, -direction, VehiclePreview.SWAP_OFFSET_X);
+        this.transition = {
+            startTime: performance.now(),
+            durationMs: VehiclePreview.SWAP_DURATION_MS,
+            direction,
+            outgoing,
+            incoming,
+            complete,
+            state
+        };
+        this.container.classList.add('is-swapping');
+        this.setState('ready', '');
+    }
+
+    private clearActiveVehicle(): void {
+        if (!this.activeVehicle) return;
+        this.disposeSceneNode(this.activeVehicle);
+        this.activeVehicle = null;
+    }
+
+    private abortTransition(): void {
+        if (!this.transition) return;
+        if (this.transition.outgoing) this.disposeSceneNode(this.transition.outgoing);
+        this.disposeSceneNode(this.transition.incoming);
+        this.transition = null;
+        this.container.classList.remove('is-swapping');
+    }
+
+    private disposeLoadedSceneNode(node: VehicleSceneNode): void {
+        node.root.traverse((child: any) => {
             if (child.geometry) child.geometry.dispose();
             if (child.material) {
                 if (Array.isArray(child.material)) child.material.forEach((mat: any) => mat.dispose());
                 else child.material.dispose();
             }
         });
-        this.vehicleRoot = null;
+    }
+
+    private disposeSceneNode(node: VehicleSceneNode): void {
+        if (node.mixer) node.mixer.stopAllAction();
+        this.scene.remove(node.root);
+        this.disposeLoadedSceneNode(node);
+    }
+
+    private updateTransition(now: number): void {
+        if (!this.transition) return;
+        const progress = THREE.MathUtils.clamp(
+            (now - this.transition.startTime) / this.transition.durationMs,
+            0,
+            1
+        );
+        const eased = this.easeSwap(progress);
+        if (this.transition.outgoing) {
+            this.setNodeSwapOffset(
+                this.transition.outgoing.root,
+                this.transition.direction,
+                THREE.MathUtils.lerp(0, VehiclePreview.SWAP_OFFSET_X, eased)
+            );
+        }
+        this.setNodeSwapOffset(
+            this.transition.incoming.root,
+            -this.transition.direction,
+            THREE.MathUtils.lerp(VehiclePreview.SWAP_OFFSET_X, 0, eased)
+        );
+        if (progress < 1) return;
+        if (this.transition.outgoing) this.disposeSceneNode(this.transition.outgoing);
+        this.transition.incoming.root.position.set(0, 0, 0);
+        this.activeVehicle = this.transition.incoming;
+        const complete = this.transition.complete;
+        const state = this.transition.state;
+        this.transition = null;
+        this.container.classList.remove('is-swapping');
+        complete(state);
+    }
+
+    private easeSwap(progress: number): number {
+        return 1 - Math.pow(1 - progress, 3);
+    }
+
+    private setNodeSwapOffset(root: THREE.Object3D, direction: -1 | 1, distance: number): void {
+        this.getScreenRightVector();
+        root.position.copy(this.screenRight).multiplyScalar(direction * distance);
+    }
+
+    private getScreenRightVector(): THREE.Vector3 {
+        this.camera.getWorldDirection(this.screenRight);
+        this.screenRight.cross(this.camera.up).normalize();
+        return this.screenRight;
+    }
+
+    private forEachVisibleVehicle(callback: (node: VehicleSceneNode) => void): void {
+        if (this.transition) {
+            if (this.transition.outgoing) callback(this.transition.outgoing);
+            callback(this.transition.incoming);
+            return;
+        }
+        if (this.activeVehicle) callback(this.activeVehicle);
     }
 
     private bindEvents(): void {
@@ -225,7 +355,7 @@ export class VehiclePreview {
     }
 
     private applyCameraDistance(): void {
-        this.camera.position.set(7.4 * this.cameraDistance, 2.45 * this.cameraDistance, 9.6 * this.cameraDistance);
+        this.camera.position.set(11.4 * this.cameraDistance, 3.45 * this.cameraDistance, 1.6 * this.cameraDistance);
         this.camera.lookAt(0, 0.74, 0);
     }
 
@@ -258,11 +388,11 @@ export class VehiclePreview {
         const delta = Math.min((now - this.lastTime) / 1000, 0.05);
         this.lastTime = now;
         if (!this.isDragging) this.rotationY += delta * 0.32;
-        if (this.vehicleRoot) {
-            this.vehicleRoot.rotation.y = this.rotationY;
-            this.vehicleRoot.position.x += (0 - this.vehicleRoot.position.x) * 0.16;
-        }
-        if (this.mixer) this.mixer.update(delta);
+        this.updateTransition(now);
+        this.forEachVisibleVehicle((node) => {
+            node.root.rotation.y = this.rotationY;
+            if (node.mixer) node.mixer.update(delta);
+        });
         this.renderer.render(this.scene, this.camera);
     };
 

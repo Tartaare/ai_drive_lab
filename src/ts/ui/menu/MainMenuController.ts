@@ -11,6 +11,7 @@ import * as AppStorage from '../../core/AppStorage';
 import { ProceduralTrackPreview } from './ProceduralTrackPreview';
 import { createModeButton, renderVehicleStats } from './renderers';
 import { TrackConfig } from '../../world/ProceduralTrack';
+import { TextScrambler } from './TextScrambler';
 export interface MainMenuSelection {
     vehicleId: string;
     vehicleModelPath: string;
@@ -33,35 +34,41 @@ export interface MainMenuControllerOptions {
 }
 
 export class MainMenuController {
+    private static readonly VEHICLE_SCRAMBLE_MIN_MS = 420;
     private readonly root: HTMLElement;
     private readonly getTheme: () => 'dark' | 'light';
     private readonly preview: VehiclePreview;
     private readonly modeList: HTMLElement;
     private readonly vehicleName: HTMLElement;
-    private readonly vehicleProfile: HTMLElement;
     private readonly statList: HTMLElement;
     private readonly trackPreview: HTMLElement;
     private readonly startBtn: HTMLButtonElement;
     private readonly hiddenLevelSelect: HTMLSelectElement | null;
     private readonly proceduralPreview: ProceduralTrackPreview;
+    private readonly prevButton: HTMLButtonElement | null;
+    private readonly nextButton: HTMLButtonElement | null;
     private vehicleIndex = 0;
     private modeId: GameModeDefinition['id'] = 'free_roam';
     private trackAvailability: { [id: string]: boolean } = { procedural: true, grand_prix: false };
     private renderedVehicleId = '';
     private previousVehicle: VehicleDefinition | null = null;
+    private vehicleRenderToken = 0;
+    private activeTextScramblers: TextScrambler[] = [];
+    private isVehicleTransitionLocked = false;
 
     constructor(options: MainMenuControllerOptions) {
         this.root = options.root;
         this.getTheme = options.getTheme;
         this.modeList = this.required('showroom-mode-list');
         this.vehicleName = this.required('showroom-vehicle-name');
-        this.vehicleProfile = this.required('showroom-vehicle-profile');
         this.statList = this.required('showroom-vehicle-stats');
         this.trackPreview = this.required('showroom-track-preview');
         this.startBtn = this.required('start-game') as HTMLButtonElement;
         this.hiddenLevelSelect = document.getElementById('main-menu-level-select') as HTMLSelectElement | null;
         const stage = this.required('vehicle-preview-stage');
         const status = this.required('vehicle-preview-status');
+        this.prevButton = document.getElementById('vehicle-prev') as HTMLButtonElement | null;
+        this.nextButton = document.getElementById('vehicle-next') as HTMLButtonElement | null;
         this.preview = new VehiclePreview(stage, status);
         this.proceduralPreview = new ProceduralTrackPreview(options.initialTrackConfig);
     }
@@ -96,10 +103,8 @@ export class MainMenuController {
     }
 
     private bindEvents(): void {
-        const prev = document.getElementById('vehicle-prev');
-        const next = document.getElementById('vehicle-next');
-        if (prev) prev.addEventListener('click', () => this.changeVehicle(-1));
-        if (next) next.addEventListener('click', () => this.changeVehicle(1));
+        if (this.prevButton) this.prevButton.addEventListener('click', () => this.changeVehicle(-1));
+        if (this.nextButton) this.nextButton.addEventListener('click', () => this.changeVehicle(1));
         document.addEventListener('apex-theme-change', () => this.updateTheme());
         this.trackPreview.addEventListener('click', async (event) => {
             const target = event.target as HTMLElement;
@@ -162,14 +167,38 @@ export class MainMenuController {
         const vehicle = this.getVehicle();
         const comparisonVehicle = direction === 0 ? null : this.previousVehicle;
         this.vehicleName.textContent = vehicle.name;
-        this.vehicleProfile.textContent = vehicle.profile;
         renderVehicleStats(this.statList, vehicle, comparisonVehicle);
         if (this.renderedVehicleId !== vehicle.id || direction !== 0) {
             this.renderedVehicleId = vehicle.id;
-            this.preview.setVehicle(vehicle, direction);
+            const shouldScramble = direction !== 0 && this.previousVehicle !== null;
+            const renderToken = ++this.vehicleRenderToken;
+            if (shouldScramble) this.setVehicleTransitionLocked(true);
+            if (shouldScramble) this.startVehicleTextScramble();
+            void this.preview.setVehicle(vehicle, direction).then((state) => {
+                if (renderToken !== this.vehicleRenderToken || state === 'stale') return;
+                this.stopVehicleTextScramble();
+                this.setVehicleTransitionLocked(false);
+            });
         }
         this.previousVehicle = vehicle;
         this.preview.preload(this.getAdjacentVehicles());
+    }
+
+    private startVehicleTextScramble(): void {
+        this.stopVehicleTextScramble();
+        const elements = [this.vehicleName]
+            .concat(Array.from(this.statList.querySelectorAll('.vehicle-stat__label')) as HTMLElement[])
+            .concat(Array.from(this.statList.querySelectorAll('.vehicle-stat__score')) as HTMLElement[]);
+        this.activeTextScramblers = elements.map((element) => {
+            const scrambler = new TextScrambler(element);
+            scrambler.start(element.textContent || '');
+            return scrambler;
+        });
+    }
+
+    private stopVehicleTextScramble(): void {
+        this.activeTextScramblers.forEach((scrambler) => scrambler.stop());
+        this.activeTextScramblers = [];
     }
 
     private renderTrack(): void {
@@ -188,9 +217,20 @@ export class MainMenuController {
     }
 
     private changeVehicle(direction: -1 | 1): void {
+        if (this.isVehicleTransitionLocked || this.preview.isTransitioning()) return;
         this.vehicleIndex = (this.vehicleIndex + direction + VEHICLES.length) % VEHICLES.length;
         this.persistSelection();
         this.renderVehicle(direction);
+    }
+
+    private setVehicleTransitionLocked(locked: boolean): void {
+        this.isVehicleTransitionLocked = locked;
+        const disabled = locked ? 'true' : 'false';
+        [this.prevButton, this.nextButton].forEach((button) => {
+            if (!button) return;
+            button.disabled = locked;
+            button.setAttribute('aria-disabled', disabled);
+        });
     }
 
     private persistSelection(): void {
