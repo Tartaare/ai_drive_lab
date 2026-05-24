@@ -46,8 +46,28 @@
     transform: scale(0.98);
 }
 
-.showroom-start:active {
-    transform: translateX(-50%) scale(0.98);
+.showroom-start--ready {
+    background: var(--c-motorsport);
+    border-color: var(--c-motorsport);
+    color: #000;
+    text-shadow: none;
+    box-shadow: 0 0 24px var(--c-motorsport-glow), 0 0 60px var(--c-motorsport-dim);
+    animation: startReady 2.4s ease-in-out infinite;
+}
+
+.showroom-start--ready::before {
+    background: #000 !important;
+}
+
+.showroom-start--ready:hover {
+    background: #ffaa4d;
+    border-color: #ffaa4d;
+    box-shadow: 0 0 32px var(--c-motorsport-glow), 0 0 80px var(--c-motorsport-dim);
+}
+
+@keyframes startReady {
+    0%, 100% { box-shadow: 0 0 24px var(--c-motorsport-glow), 0 0 60px var(--c-motorsport-dim); }
+    50% { box-shadow: 0 0 32px var(--c-motorsport-glow), 0 0 90px rgba(255, 138, 31, 0.28); }
 }
 
 .cyber-btn:disabled {

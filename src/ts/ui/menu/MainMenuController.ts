@@ -146,6 +146,7 @@ export class MainMenuController {
         if (this.hiddenLevelSelect) this.hiddenLevelSelect.value = selection.levelId;
         this.startBtn.disabled = !selection.isValid;
         this.startBtn.setAttribute('aria-disabled', String(!selection.isValid));
+        this.startBtn.classList.toggle('showroom-start--ready', selection.isValid);
         this.renderModes();
         this.renderVehicle(0);
         this.renderTrack();
