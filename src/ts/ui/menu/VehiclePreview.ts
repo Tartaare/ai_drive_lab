@@ -93,7 +93,9 @@ export class VehiclePreview {
     }
 
     public setTheme(theme: 'dark' | 'light'): void {
-        this.reflector.material.uniforms['color'].value.set(theme === 'light' ? 0x9a9e98 : 0x1a1a1a);
+        const bg = theme === 'light' ? 0xe8e8e8 : 0x111111;
+        (this.scene.background as THREE.Color).set(bg);
+        this.reflector.material.uniforms['color'].value.set(bg);
     }
 
     public isTransitioning(): boolean {
@@ -141,18 +143,30 @@ export class VehiclePreview {
     }
 
     private createSceneBase(): void {
-        const hemi = new THREE.HemisphereLight(0xffffff, 0x080808, 1.6);
-        this.scene.add(hemi);
-        const key = new THREE.DirectionalLight(0xffffff, 3.2);
-        key.position.set(3, 6, 5);
-        key.castShadow = true;
-        this.scene.add(key);
+        this.scene.background = new THREE.Color(0x111111);
 
-        this.reflector = new Reflector(new THREE.CircleGeometry(5.0, 128), {
+        // Softbox éclairage studio : enveloppant, sans rim colorée
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x1a1a1a, 2.2);
+        this.scene.add(hemi);
+        const key = new THREE.DirectionalLight(0xffffff, 2.8);
+        key.position.set(3, 8, 4);
+        key.castShadow = true;
+        key.shadow.mapSize.width = 2048;
+        key.shadow.mapSize.height = 2048;
+        this.scene.add(key);
+        const fill = new THREE.DirectionalLight(0xffffff, 1.2);
+        fill.position.set(-4, 5, -3);
+        this.scene.add(fill);
+        const top = new THREE.DirectionalLight(0xffffff, 0.8);
+        top.position.set(0, 10, 0);
+        this.scene.add(top);
+
+        // Sol plan large — même couleur que le fond → fondu infinity cove
+        this.reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
             clipBias: 0.003,
             textureWidth: 1024,
             textureHeight: 1024,
-            color: new THREE.Color(0x1a1a1a),
+            color: new THREE.Color(0x111111),
             multisample: 4
         });
         this.reflector.rotation.x = -Math.PI / 2;
