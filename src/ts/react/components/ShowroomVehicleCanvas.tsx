@@ -33,6 +33,7 @@ interface SceneRefs {
     renderer: THREE.WebGLRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
+    floorMesh: THREE.Mesh | null;
 }
 
 const FLOOR_DARK = '#151515';
@@ -46,6 +47,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         const [slots, setSlots] = useState<VehicleSlot[]>(() => [createSlot(props.vehicle, 'active', 0)]);
         const activeVehicleRef = useRef(props.vehicle);
         const sceneRefsRef = useRef<SceneRefs | null>(null);
+        const floorMeshRef = useRef<THREE.Mesh | null>(null);
         const debugOrbitRef = useRef(false);
         const rotationYRef = useRef(0);
         const cameraDistanceRef = useRef(1.22);
@@ -79,6 +81,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     renderer: refs.renderer,
                     scene: refs.scene,
                     camera: refs.camera,
+                    ground: floorMeshRef.current ?? undefined,
                     get cameraAzimuth() { return cameraAzimuthRef.current; },
                     set cameraAzimuth(value: number) { cameraAzimuthRef.current = value; },
                     get cameraElevation() { return cameraElevationRef.current; },
@@ -190,10 +193,10 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     camera={{ position: [0, 1.22, 9.15], fov: 32, near: 0.1, far: 100 }}
                     gl={{ alpha: false, antialias: true }}
                     onCreated={({ gl, scene, camera }) => {
-                        sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera };
+                        sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera, floorMesh: null };
                     }}
                 >
-                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef}>
+                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef} floorMeshRef={floorMeshRef}>
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
@@ -208,7 +211,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
     }
 );
 
-function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef }: {
+function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef, floorMeshRef }: {
     children: ReactNode;
     theme: ThemeName;
     debugOrbitRef: MutableRefObject<boolean>;
@@ -217,6 +220,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
     cameraAzimuthRef: MutableRefObject<number>;
     cameraElevationRef: MutableRefObject<number>;
     cameraHeightRef: MutableRefObject<number>;
+    floorMeshRef: MutableRefObject<THREE.Mesh | null>;
 }): JSX.Element {
     const { camera } = useThree();
     const bg = theme === 'light' ? BG_LIGHT : BG_DARK;
@@ -248,7 +252,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
                 <orthographicCamera attach="shadow-camera" left={-20} right={20} top={20} bottom={-20} />
             </directionalLight>
             {children}
-            <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <mesh ref={(m) => { floorMeshRef.current = m; }} position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[50, 50]} />
                 <MeshReflectorMaterial
                     blur={[400, 100]}
@@ -401,7 +405,7 @@ function createNormalizedVehicle(source: THREE.Object3D): THREE.Group {
     const heightScale = 1.25 / height;
     const scale = THREE.MathUtils.clamp(footprintScale * 0.82 + heightScale * 0.18, 0.2, 6);
     cloned.scale.setScalar(scale);
-    cloned.position.set(-center.x * scale, -box.min.y * scale + 0.04, -center.z * scale);
+    cloned.position.set(-center.x * scale, -box.min.y * scale - 0.02, -center.z * scale);
     cloned.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh) return;

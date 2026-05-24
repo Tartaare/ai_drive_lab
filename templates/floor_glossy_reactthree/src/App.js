@@ -1,6 +1,21 @@
-import { Suspense, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF, useScroll, ScrollControls, Environment, Merged, Text, MeshReflectorMaterial } from '@react-three/drei'
+
+const FLOOR_DEFAULTS = {
+  height: -0.52,
+  reflection: 12,
+  blur: 360,
+  roughness: 0.86,
+  tone: '#151515'
+}
+
+const FLOOR_LIMITS = {
+  height: { min: -1.2, max: 0.2, step: 0.02 },
+  reflection: { min: 0, max: 20, step: 0.5 },
+  blur: { min: 0, max: 800, step: 20 },
+  roughness: { min: 0.1, max: 1, step: 0.01 }
+}
 
 function Train() {
   const ref = useRef()
@@ -58,35 +73,101 @@ const Cabin = ({ models, color = 'white', seatColor = 'white', name, ...props })
   </group>
 )
 
-export default function App() {
+function FloorControls({ isOpen, settings, onChange, onReset, onToggle }) {
+  const updateSetting = (key) => (event) => {
+    onChange((current) => ({ ...current, [key]: Number(event.target.value) }))
+  }
+
   return (
-    <Canvas dpr={[1, 1.5]} shadows camera={{ position: [-15, 15, 18], fov: 35 }} gl={{ alpha: false }}>
-      <fog attach="fog" args={['#17171b', 30, 40]} />
-      <color attach="background" args={['#17171b']} />
-      <ambientLight intensity={0.25} />
-      <directionalLight castShadow intensity={2} position={[10, 6, 6]} shadow-mapSize={[1024, 1024]}>
-        <orthographicCamera attach="shadow-camera" left={-20} right={20} top={20} bottom={-20} />
-      </directionalLight>
-      <Suspense fallback={null}>
-        <ScrollControls pages={3}>
-          <Train />
-        </ScrollControls>
-        <mesh position={[0, -1.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[50, 50]} />
-          <MeshReflectorMaterial
-            blur={[400, 100]}
-            resolution={1024}
-            mixBlur={1}
-            mixStrength={15}
-            depthScale={1}
-            minDepthThreshold={0.85}
-            color="#151515"
-            metalness={0.6}
-            roughness={1}
-          />
-        </mesh>
-        <Environment preset="dawn" />
-      </Suspense>
-    </Canvas>
+    <aside className={`floor-panel ${isOpen ? 'is-open' : ''}`} aria-label="Réglages du sol">
+      <button className="floor-panel__toggle" type="button" onClick={onToggle} aria-expanded={isOpen}>
+        F3 Sol
+      </button>
+      <div className="floor-panel__body" aria-hidden={!isOpen}>
+        <header className="floor-panel__header">
+          <span>Surface</span>
+          <button type="button" onClick={onReset}>
+            Réinitialiser
+          </button>
+        </header>
+        <label>
+          <span>Hauteur</span>
+          <output>{settings.height.toFixed(2)}</output>
+          <input type="range" value={settings.height} onChange={updateSetting('height')} {...FLOOR_LIMITS.height} />
+        </label>
+        <label>
+          <span>Réflexion</span>
+          <output>{settings.reflection.toFixed(1)}</output>
+          <input type="range" value={settings.reflection} onChange={updateSetting('reflection')} {...FLOOR_LIMITS.reflection} />
+        </label>
+        <label>
+          <span>Flou</span>
+          <output>{settings.blur}</output>
+          <input type="range" value={settings.blur} onChange={updateSetting('blur')} {...FLOOR_LIMITS.blur} />
+        </label>
+        <label>
+          <span>Rugosité</span>
+          <output>{settings.roughness.toFixed(2)}</output>
+          <input type="range" value={settings.roughness} onChange={updateSetting('roughness')} {...FLOOR_LIMITS.roughness} />
+        </label>
+      </div>
+    </aside>
+  )
+}
+
+export default function App() {
+  const [floorSettings, setFloorSettings] = useState(FLOOR_DEFAULTS)
+  const [isFloorPanelOpen, setIsFloorPanelOpen] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'F3') {
+        event.preventDefault()
+        setIsFloorPanelOpen((current) => !current)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  return (
+    <>
+      <FloorControls
+        isOpen={isFloorPanelOpen}
+        settings={floorSettings}
+        onChange={setFloorSettings}
+        onReset={() => setFloorSettings(FLOOR_DEFAULTS)}
+        onToggle={() => setIsFloorPanelOpen((current) => !current)}
+      />
+      <Canvas dpr={[1, 1.5]} shadows camera={{ position: [-15, 15, 18], fov: 35 }} gl={{ alpha: false }}>
+        <fog attach="fog" args={['#17171b', 30, 40]} />
+        <color attach="background" args={['#17171b']} />
+        <ambientLight intensity={0.25} />
+        <directionalLight castShadow intensity={2} position={[10, 6, 6]} shadow-mapSize={[1024, 1024]}>
+          <orthographicCamera attach="shadow-camera" left={-20} right={20} top={20} bottom={-20} />
+        </directionalLight>
+        <Suspense fallback={null}>
+          <ScrollControls pages={3}>
+            <Train />
+          </ScrollControls>
+          <mesh position={[0, floorSettings.height, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <planeGeometry args={[50, 50]} />
+            <MeshReflectorMaterial
+              blur={[floorSettings.blur, 100]}
+              resolution={1024}
+              mixBlur={1}
+              mixStrength={floorSettings.reflection}
+              depthScale={1}
+              minDepthThreshold={0.85}
+              color={floorSettings.tone}
+              metalness={0.6}
+              roughness={floorSettings.roughness}
+            />
+          </mesh>
+          <Environment preset="dawn" />
+        </Suspense>
+      </Canvas>
+    </>
   )
 }
