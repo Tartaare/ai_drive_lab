@@ -62,11 +62,16 @@ export class VehiclePreview {
     private loadToken = 0;
     private rotationY = 0;
     private dragStartX = 0;
+    private dragStartY = 0;
     private dragStartRotation = 0;
+    private dragStartElevation = 0;
     private isDragging = false;
     private isPointerOver = false;
     private lastTime = performance.now();
     private cameraDistance = 1.22;
+    private cameraAzimuth = 0;
+    private cameraElevation = 16;
+    private debugOrbitMode = false;
     private readonly reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     constructor(container: HTMLElement, status: HTMLElement) {
@@ -131,8 +136,30 @@ export class VehiclePreview {
         });
     }
 
-    public getSceneRefs(): { renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera } {
-        return { renderer: this.renderer, scene: this.scene, camera: this.camera };
+    public getSceneRefs(): {
+        renderer: THREE.WebGLRenderer;
+        scene: THREE.Scene;
+        camera: THREE.PerspectiveCamera;
+        cameraAzimuth: number;
+        cameraElevation: number;
+        cameraDistance: number;
+    } {
+        const self = this;
+        return {
+            renderer: this.renderer,
+            scene: this.scene,
+            camera: this.camera,
+            get cameraAzimuth() { return self.cameraAzimuth; },
+            set cameraAzimuth(v: number) { self.cameraAzimuth = v; self.applyCameraOrbit(); },
+            get cameraElevation() { return self.cameraElevation; },
+            set cameraElevation(v: number) { self.cameraElevation = THREE.MathUtils.clamp(v, -10, 80); self.applyCameraOrbit(); },
+            get cameraDistance() { return self.cameraDistance; },
+            set cameraDistance(v: number) { self.setCameraDistance(v / 11.5); }
+        };
+    }
+
+    public setDebugOrbitMode(enabled: boolean): void {
+        this.debugOrbitMode = enabled;
     }
 
     public dispose(): void {
@@ -416,7 +443,9 @@ export class VehiclePreview {
         this.renderer.domElement.addEventListener('pointerdown', (event: PointerEvent) => {
             this.isDragging = true;
             this.dragStartX = event.clientX;
-            this.dragStartRotation = this.rotationY;
+            this.dragStartY = event.clientY;
+            this.dragStartRotation = this.debugOrbitMode ? this.cameraAzimuth : this.rotationY;
+            this.dragStartElevation = this.cameraElevation;
             this.renderer.domElement.focus();
             this.renderer.domElement.setPointerCapture(event.pointerId);
         });
@@ -428,7 +457,15 @@ export class VehiclePreview {
         });
         this.renderer.domElement.addEventListener('pointermove', (event: PointerEvent) => {
             if (!this.isDragging) return;
-            this.rotationY = this.dragStartRotation + (event.clientX - this.dragStartX) * 0.012;
+            const dx = event.clientX - this.dragStartX;
+            const dy = event.clientY - this.dragStartY;
+            if (this.debugOrbitMode) {
+                this.cameraAzimuth = this.dragStartRotation + dx * 0.4;
+                this.cameraElevation = THREE.MathUtils.clamp(this.dragStartElevation - dy * 0.3, -10, 80);
+                this.applyCameraOrbit();
+            } else {
+                this.rotationY = this.dragStartRotation + dx * 0.012;
+            }
         });
         this.renderer.domElement.addEventListener('pointerup', () => {
             this.isDragging = false;
@@ -456,8 +493,25 @@ export class VehiclePreview {
     }
 
     private applyCameraDistance(): void {
+        if (this.debugOrbitMode) {
+            this.applyCameraOrbit();
+            return;
+        }
         this.camera.up.set(0, 1, 0);
         this.camera.position.set(0, 3.45 * this.cameraDistance, 11.5 * this.cameraDistance);
+        this.camera.lookAt(0, 0.74, 0);
+    }
+
+    private applyCameraOrbit(): void {
+        const azRad = THREE.MathUtils.degToRad(this.cameraAzimuth);
+        const elRad = THREE.MathUtils.degToRad(this.cameraElevation);
+        const dist = 11.5 * this.cameraDistance;
+        const y = dist * Math.sin(elRad);
+        const horiz = dist * Math.cos(elRad);
+        const x = horiz * Math.sin(azRad);
+        const z = horiz * Math.cos(azRad);
+        this.camera.up.set(0, 1, 0);
+        this.camera.position.set(x, Math.max(y, 0.3), z);
         this.camera.lookAt(0, 0.74, 0);
     }
 

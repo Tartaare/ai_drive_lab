@@ -22,6 +22,9 @@ export interface SceneDebugSource
 	cameraRadius?: number;
 	cameraPhi?: number;
 	cameraSensitivity?: number;
+	cameraAzimuth?: number;
+	cameraElevation?: number;
+	cameraDistance?: number;
 }
 
 export class SceneDebugPanel
@@ -120,6 +123,9 @@ export class SceneDebugPanel
 		if (typeof s.cameraRadius === 'number') f.add(s as any, 'cameraRadius', 2, 30, 0.5).name('Follow Distance');
 		if (typeof s.cameraPhi === 'number') f.add(s as any, 'cameraPhi', -60, 60, 1).name('Follow Elevation');
 		if (typeof s.cameraSensitivity === 'number') f.add(s as any, 'cameraSensitivity', 0.05, 1, 0.01).name('Mouse Sensitivity');
+		if (typeof s.cameraAzimuth === 'number') f.add(s as any, 'cameraAzimuth', -180, 180, 1).name('Azimuth (°)').listen();
+		if (typeof s.cameraElevation === 'number') f.add(s as any, 'cameraElevation', -10, 80, 1).name('Elevation (°)').listen();
+		if (typeof s.cameraDistance === 'number') f.add(s as any, 'cameraDistance', 5, 25, 0.5).name('Distance');
 		f.close();
 	}
 

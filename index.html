@@ -414,6 +414,10 @@
             const level = selection.levelId;
             activeRunSelection = selection;
 
+            // Close debug panel & reset orbit before starting game
+            if (sceneDebugPanel && sceneDebugPanel.isVisible()) sceneDebugPanel.destroy();
+            if (showroomMenu && showroomMenu.preview) showroomMenu.preview.setDebugOrbitMode(false);
+
             // Dispose old if exists
             if (world && world.dispose) world.dispose();
 
@@ -475,6 +479,7 @@
                 }
             }
             if (sceneDebugPanel) sceneDebugPanel.destroy();
+            if (showroomMenu && showroomMenu.preview) showroomMenu.preview.setDebugOrbitMode(false);
             if (world && world.dispose) world.dispose();
             world = null;
             gameStarted = false;
@@ -534,11 +539,19 @@
             return undefined;
         }
 
+        function isShowroomSource() {
+            return !world && showroomMenu && showroomMenu.preview;
+        }
+
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') togglePause();
             if (e.key === 'F3') {
                 e.preventDefault();
+                var wasVisible = sceneDebugPanel.isVisible();
                 sceneDebugPanel.toggle(getDebugSource());
+                if (isShowroomSource()) {
+                    showroomMenu.preview.setDebugOrbitMode(!wasVisible);
+                }
             }
         });
 
