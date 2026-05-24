@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { GlossyShowroomFloor } from './menu/GlossyShowroomFloor';
 
 // @ts-ignore — lil-gui ships UMD, Webpack 4 resolves it fine
 import GUI from 'lil-gui';
@@ -27,7 +26,6 @@ export interface SceneDebugSource
 	cameraElevation?: number;
 	cameraDistance?: number;
 	cameraHeight?: number;
-	showroomFloor?: GlossyShowroomFloor;
 }
 
 export class SceneDebugPanel
@@ -87,7 +85,6 @@ export class SceneDebugPanel
 		this.buildLightsFolder(s);
 		if (s.dayNight) this.buildDayNightFolder(s);
 		this.buildFogFolder(s);
-		this.buildFloorFolder(s);
 		this.buildShadowFolder(s);
 	}
 
@@ -111,8 +108,8 @@ export class SceneDebugPanel
 		});
 
 		f.add(s.renderer.shadowMap, 'enabled').name('Shadows');
-		if ('physicallyCorrectLights' in s.renderer) {
-			f.add(s.renderer as any, 'physicallyCorrectLights').name('Physical Lights');
+		if ('useLegacyLights' in s.renderer) {
+			f.add(s.renderer as any, 'useLegacyLights').name('Legacy Lights');
 		}
 		f.close();
 	}
@@ -207,67 +204,6 @@ export class SceneDebugPanel
 			fog.color.set(v);
 		});
 		f.close();
-	}
-
-	/* ── Floor (Showroom Floor) ───── */
-	private buildFloorFolder(s: SceneDebugSource): void
-	{
-		const floor = s.showroomFloor;
-		if (!floor) return;
-		const f = this.gui!.addFolder('Floor');
-
-		const reflector = floor.reflector;
-		if (reflector && reflector.material && reflector.material.uniforms)
-		{
-			const uniforms = reflector.material.uniforms;
-			const sub = f.addFolder('Reflector');
-
-			if (uniforms['color'])
-			{
-				const c = uniforms['color'].value as THREE.Color;
-				sub.addColor({ color: '#' + c.getHexString() }, 'color').name('Tint').onChange((v: string) =>
-				{
-					c.set(v);
-				});
-			}
-
-			if (uniforms['opacity'] !== undefined)
-			{
-				sub.add(uniforms['opacity'], 'value', 0, 1, 0.01).name('Opacity');
-			}
-
-			sub.add(reflector, 'visible').name('Visible');
-			sub.open();
-		}
-
-		const catcher = floor.shadowCatcher;
-		if (catcher)
-		{
-			const mat = catcher.material as THREE.ShadowMaterial;
-			const sub = f.addFolder('Shadow Catcher');
-			sub.add(mat, 'opacity', 0, 1, 0.01).name('Opacity');
-			sub.addColor({ color: '#' + mat.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
-			{
-				mat.color.set(v);
-			});
-			sub.add(catcher, 'visible').name('Visible');
-			sub.close();
-		}
-
-		const floorBase = floor.floorBase;
-		if (floorBase && floorBase.material)
-		{
-			const mat = floorBase.material as THREE.MeshPhysicalMaterial;
-			const sub = f.addFolder('Floor Base');
-			sub.add(floorBase, 'visible').name('Visible');
-			sub.add(mat, 'metalness', 0, 1, 0.01).name('Metalness');
-			sub.add(mat, 'roughness', 0, 1, 0.01).name('Roughness');
-			sub.add(mat, 'clearcoat', 0, 1, 0.01).name('Clearcoat');
-			sub.add(mat, 'clearcoatRoughness', 0, 1, 0.01).name('Clearcoat Roughness');
-			sub.close();
-		}
-
-		f.open();
 	}
 
 	/* ── Shadow Camera ────────────────────────── */

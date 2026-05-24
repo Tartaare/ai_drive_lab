@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { KERB_WIDTH_METERS, TRACK_EDGE_LINE_WIDTH_METERS, TrackData } from './trackTypes';
+import { TRACK_EDGE_LINE_WIDTH_METERS, TrackData } from './trackTypes';
 import { buildKerbGeometry } from './trackKerbs';
 
 export function computeTrackBorders(

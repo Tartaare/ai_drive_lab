@@ -54,10 +54,7 @@ export class World
 	
 	// Time
 	private clock: THREE.Clock;
-	private renderDelta: number = 0;
-	private logicDelta: number = 0;
 	private requestDelta: number = 0;
-	private sinceLastFrame: number = 0;
 
 	// State
 	private isPaused: boolean = false;
@@ -995,5 +992,4 @@ export class World
 // Export for external use
 export { SimpleCar } from './vehicles/SimpleCar';
 export * as AppStorage from './core/AppStorage';
-export { MainMenuController } from './ui/menu/MainMenuController';
 export { SceneDebugPanel } from './ui/SceneDebugPanel';

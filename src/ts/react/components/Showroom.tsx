@@ -1,4 +1,4 @@
-import { CSSProperties, MutableRefObject, useMemo } from 'react';
+import { MutableRefObject, useMemo } from 'react';
 import { GAME_MODES, TRACKS, VEHICLES, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
@@ -108,7 +108,6 @@ function VehicleStats({ vehicle, previousVehicle }: { vehicle: VehicleDefinition
                 <AnimatedStatBar 
                     value={stat.value} 
                     maxValue={stat.max} 
-                    previousValue={previous?.value}
                 />
                 <AnimatedNumber 
                     value={stat.value} 

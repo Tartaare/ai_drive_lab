@@ -82,14 +82,10 @@ Le build optimise est genere dans `dist/`.
 │   │   │       ├── trackKerbs.ts       # Bordures et vibreurs
 │   │   │       └── trackSpatial.ts     # Helpers spatiaux
 │   │   ├── vehicles/        # Vehicule, roues, modeles
-│   │   └── ui/              # Composants interface
-│   │       └── menu/        # Menu showroom automobile
-│   │           ├── MainMenuController.ts    # Controller menu principal
-│   │           ├── VehiclePreview.ts        # Preview vehicule 3D
-│   │           ├── vehiclePreviewScene.ts   # Scene statique preview vehicule
-│   │           ├── ProceduralTrackPreview.ts # Preview circuit top-down
-│   │           ├── catalog.ts               # Catalogue vehicules
-│   │           └── renderers.ts             # Renderers UI
+│   │   └── ui/              # Helpers UI partages
+│   │       ├── SceneDebugPanel.ts # Panneau debug F3
+│   │       └── menu/
+│   │           └── catalog.ts     # Catalogue vehicules, modes et circuits
 │   └── lib/                 # Librairies tierces (Cannon.js, shaders)
 ├── scripts/
 │   └── test-trackgen.js     # Suite de tests deterministes (406 cas)

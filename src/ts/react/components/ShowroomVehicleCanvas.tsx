@@ -54,6 +54,22 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         const cameraHeightRef = useRef(-0.74);
         const dragRef = useRef({ active: false, x: 0, y: 0, rotation: 0, elevation: 16, azimuth: 0 });
         const reduceMotion = useReducedMotion();
+        const containerRef = useRef<HTMLDivElement>(null);
+
+        // Attach wheel listener with passive: false to allow preventDefault
+        useEffect(() => {
+            const container = containerRef.current;
+            if (!container) return;
+            
+            const wheelHandler = (event: WheelEvent): void => {
+                event.preventDefault();
+                const direction = event.deltaY > 0 ? 1 : -1;
+                cameraDistanceRef.current = THREE.MathUtils.clamp(cameraDistanceRef.current + direction * 0.1, 0.86, 2.05);
+            };
+            
+            container.addEventListener('wheel', wheelHandler, { passive: false });
+            return () => container.removeEventListener('wheel', wheelHandler);
+        }, []);
 
         useImperativeHandle(ref, () => ({
             getSceneRefs: () => {
@@ -114,12 +130,6 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
             props.onTransitionChange(false);
         };
 
-        const handleWheel = (event: React.WheelEvent<HTMLDivElement>): void => {
-            event.preventDefault();
-            const direction = event.deltaY > 0 ? 1 : -1;
-            cameraDistanceRef.current = THREE.MathUtils.clamp(cameraDistanceRef.current + direction * 0.1, 0.86, 2.05);
-        };
-
         const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
             dragRef.current = {
                 active: true,
@@ -162,11 +172,11 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
 
         return (
             <div
+                ref={containerRef}
                 className="vehicle-stage__r3f"
                 role="application"
                 tabIndex={0}
                 aria-label="Prévisualisation 3D du véhicule"
-                onWheel={handleWheel}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
@@ -178,7 +188,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     dpr={[1, 1.5]}
                     shadows
                     camera={{ position: [0, 1.22, 9.15], fov: 32, near: 0.1, far: 100 }}
-                    gl={{ alpha: true, antialias: true }}
+                    gl={{ alpha: false, antialias: true }}
                     onCreated={({ gl, scene, camera }) => {
                         sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera };
                     }}
@@ -247,7 +257,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
                     mixStrength={theme === 'light' ? 8 : 15}
                     depthScale={1}
                     minDepthThreshold={0.85}
-                    mirror={0}
+                    mirror={undefined as unknown as number}
                     color={floor}
                     metalness={0.6}
                     roughness={1}

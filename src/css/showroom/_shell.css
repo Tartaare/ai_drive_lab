@@ -21,6 +21,15 @@
     backdrop-filter: blur(0px);
 }
 
+.menu-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    perspective: 1000px;
+}
+
 .showroom-brand {
     position: absolute;
     top: 2rem;

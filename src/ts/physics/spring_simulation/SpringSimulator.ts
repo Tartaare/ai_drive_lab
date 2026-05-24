@@ -60,7 +60,7 @@ export class SpringSimulator extends SimulatorBase
 	/**
 	 * Gets another simulation frame
 	 */
-	public getFrame(isLastFrame: boolean): SimulationFrame
+	public getFrame(_isLastFrame: boolean): SimulationFrame
 	{
 		return spring(this.lastFrame().position, this.target, this.lastFrame().velocity, this.mass, this.damping);
 	}
