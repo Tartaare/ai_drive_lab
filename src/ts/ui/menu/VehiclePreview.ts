@@ -3,23 +3,33 @@ import { VehicleDefinition } from './catalog';
 
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+// @ts-ignore
+import { SkeletonUtils } from 'three/examples/jsm/utils/SkeletonUtils';
 
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
 export type VehiclePreviewLoadState = 'ready' | 'error' | 'stale';
+type SwapDirection = -1 | 1;
 
 interface VehicleSceneNode {
     root: THREE.Object3D;
     mixer: THREE.AnimationMixer | null;
+    radius: number;
 }
 
 interface VehicleSwapTransition {
     startTime: number;
     durationMs: number;
-    direction: -1 | 1;
+    direction: SwapDirection;
+    offscreenDistance: number;
     outgoing: VehicleSceneNode | null;
     incoming: VehicleSceneNode;
     complete: (state: VehiclePreviewLoadState) => void;
     state: VehiclePreviewLoadState;
+}
+
+interface CachedVehicleModel {
+    scene: THREE.Object3D;
+    animations: any[];
 }
 
 export class VehiclePreview {
@@ -36,10 +46,14 @@ export class VehiclePreview {
     private readonly camera: THREE.PerspectiveCamera;
     private readonly floorMaterial: THREE.MeshStandardMaterial;
     private readonly loader = new GLTFLoader();
-    private readonly preloadedPaths: { [path: string]: boolean } = {};
-    private static readonly SWAP_DURATION_MS = 2000;
-    private static readonly SWAP_OFFSET_X = 4.8;
+    private readonly modelCache: { [path: string]: Promise<CachedVehicleModel> } = {};
+    private static readonly SWAP_DURATION_MS = 520;
     private readonly screenRight = new THREE.Vector3();
+    private readonly tempAbsRight = new THREE.Vector3();
+    private readonly tempBox = new THREE.Box3();
+    private readonly tempCenter = new THREE.Vector3();
+    private readonly tempSize = new THREE.Vector3();
+    private readonly tempCameraSpaceCenter = new THREE.Vector3();
     private activeVehicle: VehicleSceneNode | null = null;
     private transition: VehicleSwapTransition | null = null;
     private animationFrame = 0;
@@ -94,17 +108,17 @@ export class VehiclePreview {
 
     public setVehicle(vehicle: VehicleDefinition, direction: -1 | 0 | 1): Promise<VehiclePreviewLoadState> {
         const token = ++this.loadToken;
-        this.setState('loading', '');
+        const shouldAnimateSwap = direction !== 0 && this.activeVehicle !== null && !this.reduceMotionQuery.matches;
+        this.setState(shouldAnimateSwap ? 'ready' : 'loading', '');
         return new Promise((resolve) => {
-            this.loader.load(vehicle.modelPath, (gltf: any) => {
+            this.loadModel(vehicle.modelPath).then((cached) => {
                 if (token !== this.loadToken) {
-                    this.disposeLoadedSceneNode(this.createSceneNode(gltf.scene as THREE.Object3D, gltf.animations || []));
                     resolve('stale');
                     return;
                 }
-                const incoming = this.createSceneNode(gltf.scene as THREE.Object3D, gltf.animations || []);
+                const incoming = this.createSceneNode(this.cloneModelScene(cached.scene), cached.animations);
                 this.mountIncomingVehicle(incoming, direction, resolve, 'ready');
-            }, undefined, () => {
+            }).catch(() => {
                 if (token !== this.loadToken) {
                     resolve('stale');
                     return;
@@ -118,9 +132,7 @@ export class VehiclePreview {
 
     public preload(vehicles: VehicleDefinition[]): void {
         vehicles.forEach((vehicle) => {
-            if (this.preloadedPaths[vehicle.modelPath]) return;
-            this.preloadedPaths[vehicle.modelPath] = true;
-            this.loader.load(vehicle.modelPath, () => undefined, undefined, () => undefined);
+            void this.loadModel(vehicle.modelPath).catch(() => undefined);
         });
     }
 
@@ -173,12 +185,14 @@ export class VehiclePreview {
         });
         const root = new THREE.Group();
         root.add(model);
+        const sphere = new THREE.Sphere();
+        new THREE.Box3().setFromObject(root).getBoundingSphere(sphere);
         let mixer: THREE.AnimationMixer | null = null;
         if (animations.length > 0) {
             mixer = new THREE.AnimationMixer(model);
             mixer.clipAction(animations[0]).play();
         }
-        return { root, mixer };
+        return { root, mixer, radius: Math.max(sphere.radius, 0.1) };
     }
 
     private createFallbackNode(): VehicleSceneNode {
@@ -189,7 +203,7 @@ export class VehiclePreview {
         );
         body.position.y = 0.55;
         group.add(body);
-        return { root: group, mixer: null };
+        return { root: group, mixer: null, radius: 1.55 };
     }
 
     private mountIncomingVehicle(
@@ -200,9 +214,8 @@ export class VehiclePreview {
     ): void {
         this.abortTransition();
         const outgoing = this.activeVehicle;
-        this.activeVehicle = null;
+        incoming.root.rotation.y = this.rotationY;
         this.scene.add(incoming.root);
-        this.rotationY = 0;
         if (direction === 0 || !outgoing || this.reduceMotionQuery.matches) {
             if (outgoing) this.disposeSceneNode(outgoing);
             incoming.root.position.set(0, 0, 0);
@@ -211,12 +224,19 @@ export class VehiclePreview {
             complete(state);
             return;
         }
+        this.activeVehicle = null;
         outgoing.root.position.set(0, 0, 0);
-        this.setNodeSwapOffset(incoming.root, -direction, VehiclePreview.SWAP_OFFSET_X);
+        outgoing.root.rotation.y = this.rotationY;
+        const offscreenDistance = Math.max(
+            this.getSwapOffscreenDistance(outgoing),
+            this.getSwapOffscreenDistance(incoming)
+        );
+        this.setNodeSwapOffset(incoming.root, this.getOppositeDirection(direction), offscreenDistance);
         this.transition = {
             startTime: performance.now(),
             durationMs: VehiclePreview.SWAP_DURATION_MS,
             direction,
+            offscreenDistance,
             outgoing,
             incoming,
             complete,
@@ -268,13 +288,13 @@ export class VehiclePreview {
             this.setNodeSwapOffset(
                 this.transition.outgoing.root,
                 this.transition.direction,
-                THREE.MathUtils.lerp(0, VehiclePreview.SWAP_OFFSET_X, eased)
+                THREE.MathUtils.lerp(0, this.transition.offscreenDistance, eased)
             );
         }
         this.setNodeSwapOffset(
             this.transition.incoming.root,
-            -this.transition.direction,
-            THREE.MathUtils.lerp(VehiclePreview.SWAP_OFFSET_X, 0, eased)
+            this.getOppositeDirection(this.transition.direction),
+            THREE.MathUtils.lerp(this.transition.offscreenDistance, 0, eased)
         );
         if (progress < 1) return;
         if (this.transition.outgoing) this.disposeSceneNode(this.transition.outgoing);
@@ -288,18 +308,68 @@ export class VehiclePreview {
     }
 
     private easeSwap(progress: number): number {
-        return 1 - Math.pow(1 - progress, 3);
+        return progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
     }
 
-    private setNodeSwapOffset(root: THREE.Object3D, direction: -1 | 1, distance: number): void {
+    private setNodeSwapOffset(root: THREE.Object3D, direction: SwapDirection, distance: number): void {
         this.getScreenRightVector();
         root.position.copy(this.screenRight).multiplyScalar(direction * distance);
+    }
+
+    private getOppositeDirection(direction: SwapDirection): SwapDirection {
+        return direction === 1 ? -1 : 1;
+    }
+
+    private getSwapOffscreenDistance(node: VehicleSceneNode): number {
+        this.getScreenRightVector();
+        node.root.updateWorldMatrix(true, true);
+        this.tempBox.setFromObject(node.root);
+        this.tempBox.getCenter(this.tempCenter);
+        this.tempCameraSpaceCenter.copy(this.tempCenter);
+        this.camera.worldToLocal(this.tempCameraSpaceCenter);
+        const depth = Math.max(Math.abs(this.tempCameraSpaceCenter.z), this.camera.near + 0.001);
+        const halfViewportHeight = Math.tan(THREE.MathUtils.degToRad(this.camera.fov * 0.5)) * depth;
+        const halfViewportWidth = halfViewportHeight * this.camera.aspect;
+        this.tempBox.getSize(this.tempSize);
+        this.tempAbsRight.set(
+            Math.abs(this.screenRight.x),
+            Math.abs(this.screenRight.y),
+            Math.abs(this.screenRight.z)
+        );
+        const projectedHalfWidth = this.tempSize.dot(this.tempAbsRight) * 0.5;
+        return halfViewportWidth + Math.max(node.radius, projectedHalfWidth) + 0.12;
     }
 
     private getScreenRightVector(): THREE.Vector3 {
         this.camera.getWorldDirection(this.screenRight);
         this.screenRight.cross(this.camera.up).normalize();
         return this.screenRight;
+    }
+
+    private loadModel(modelPath: string): Promise<CachedVehicleModel> {
+        if (!this.modelCache[modelPath]) {
+            this.modelCache[modelPath] = new Promise<CachedVehicleModel>((resolve, reject) => {
+                this.loader.load(modelPath, (gltf: any) => {
+                    resolve({
+                        scene: gltf.scene as THREE.Object3D,
+                        animations: (gltf.animations || []) as any[]
+                    });
+                }, undefined, reject);
+            }).catch((error) => {
+                delete this.modelCache[modelPath];
+                throw error;
+            });
+        }
+        return this.modelCache[modelPath];
+    }
+
+    private cloneModelScene(scene: THREE.Object3D): THREE.Object3D {
+        if (SkeletonUtils && typeof SkeletonUtils.clone === 'function') {
+            return SkeletonUtils.clone(scene) as THREE.Object3D;
+        }
+        return scene.clone(true);
     }
 
     private forEachVisibleVehicle(callback: (node: VehicleSceneNode) => void): void {

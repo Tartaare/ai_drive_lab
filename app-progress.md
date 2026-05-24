@@ -1,3 +1,25 @@
+# SPRINT showroom-carousel-swap-refine — Carousel 3D swap sans flash
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/ts/ui/menu/VehiclePreview.ts`
+
+# Validation :
+- Le swap véhicule utilise maintenant une distance offscreen calculée depuis la caméra showroom, le FOV, l’aspect ratio et l’encombrement réel du modèle au lieu d’un offset figé.
+- Les changements directionnels conservent l’ancien véhicule affiché pendant le chargement du nouveau ; l’état `.vehicle-stage[data-state="loading"]` n’est plus déclenché au centre pendant un swap gauche/droite.
+- Le cache GLTF mémorise désormais les promesses par `modelPath`, réutilise les chargements adjacents et clone la scène source avant chaque montage via `SkeletonUtils.clone` avec fallback `scene.clone(true)`.
+- La transition passe à `520ms` avec `easeInOutCubic`, tout en conservant le verrouillage existant des flèches côté `MainMenuController`.
+- La rotation courante est partagée entre modèle sortant et entrant ; aucun reset brutal à `0` n’est appliqué pendant un swap directionnel.
+- `npm run build` : succes.
+- `npx tsc --noEmit` : toujours bloque par l’incompatibilite historique entre `typescript@3.9.9` et les definitions recentes `@types/node` / `undici-types`.
+
+# Risques restants :
+- La sortie complète hors viewport dépend encore de la bounding box Three.js des assets ; une vérification visuelle manuelle reste nécessaire sur desktop et mobile pour chaque modèle GLB.
+- Le fallback `scene.clone(true)` reste moins fiable que `SkeletonUtils.clone` pour des rigs complexes si un asset futur contourne le chemin standard GLTF skinné.
+
 # SPRINT showroom-vehicle-swap-animation — Swap 3D fluide du carousel véhicule
 
 # Date : 2026-05-24
