@@ -19,7 +19,6 @@ export interface VehicleDefinition {
     id: string;
     name: string;
     modelPath: string;
-    profile: string;
     stats: Record<VehicleStatKey, VehicleStat>;
 }
 
@@ -52,7 +51,6 @@ export const VEHICLES: VehicleDefinition[] = [
         id: 'car_blue_small',
         name: 'Apex S-12',
         modelPath: 'car_models/car_blue_small.glb',
-        profile: 'Compact response chassis',
         stats: {
             topSpeed: stat('Vitesse', 74),
             acceleration: stat('Accélération', 76),
@@ -66,7 +64,6 @@ export const VEHICLES: VehicleDefinition[] = [
         id: 'car_orange',
         name: 'Apex R-40',
         modelPath: 'car_models/car_orange.glb',
-        profile: 'Balanced road prototype',
         stats: {
             topSpeed: stat('Vitesse', 84),
             acceleration: stat('Accélération', 84),
@@ -80,7 +77,6 @@ export const VEHICLES: VehicleDefinition[] = [
         id: 'car_red',
         name: 'Apex GT-7',
         modelPath: 'car_models/car_red.glb',
-        profile: 'High-speed grand tourer',
         stats: {
             topSpeed: stat('Vitesse', 91),
             acceleration: stat('Accélération', 88),
@@ -94,7 +90,6 @@ export const VEHICLES: VehicleDefinition[] = [
         id: 'ferrari_testarossa_84',
         name: 'Testarossa 84',
         modelPath: 'car_models/ferrari_testarossa_84_low_poly.glb',
-        profile: 'Classic low-poly icon',
         stats: {
             topSpeed: stat('Vitesse', 86),
             acceleration: stat('Accélération', 66),
