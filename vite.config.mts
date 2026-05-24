@@ -5,7 +5,9 @@ import path from 'path';
 export default defineConfig({
     plugins: [react()],
     resolve: {
+        dedupe: ['three', 'react', 'react-dom', '@react-three/fiber'],
         alias: {
+            three: path.resolve(__dirname, './node_modules/three'),
             cannon: path.resolve(__dirname, './src/lib/cannon/cannon.js')
         }
     },
