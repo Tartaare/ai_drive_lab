@@ -206,13 +206,13 @@ export class VehiclePreview {
         rim.position.set(-4.8, 3.4, -4.8);
         this.scene.add(rim);
 
-        this.reflector = new Reflector(new THREE.PlaneGeometry(80, 80), {
+        this.reflector = new Reflector(new THREE.PlaneGeometry(80, 80) as unknown as THREE.BufferGeometry, {
             clipBias: 0.003,
             textureWidth: 1024,
             textureHeight: 1024,
             color: new THREE.Color(0x161616),
             multisample: 4
-        });
+        } as any);
         this.reflector.rotation.x = -Math.PI / 2;
         this.reflector.position.y = 0;
         this.scene.add(this.reflector);
