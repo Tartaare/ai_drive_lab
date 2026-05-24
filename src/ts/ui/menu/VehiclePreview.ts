@@ -5,6 +5,8 @@ import { VehicleDefinition } from './catalog';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // @ts-ignore
 import { SkeletonUtils } from 'three/examples/jsm/utils/SkeletonUtils';
+// @ts-ignore
+import { Reflector } from 'three/examples/jsm/objects/Reflector';
 
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
 export type VehiclePreviewLoadState = 'ready' | 'error' | 'stale';
@@ -44,7 +46,7 @@ export class VehiclePreview {
     private readonly renderer: THREE.WebGLRenderer;
     private readonly scene: THREE.Scene;
     private readonly camera: THREE.PerspectiveCamera;
-    private readonly floorMaterial: THREE.MeshStandardMaterial;
+    private reflector!: any;
     private readonly loader = new GLTFLoader();
     private readonly modelCache: { [path: string]: Promise<CachedVehicleModel> } = {};
     private static readonly SWAP_DURATION_MS = 520;
@@ -83,13 +85,7 @@ export class VehiclePreview {
         this.camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
         this.applyCameraDistance();
 
-        this.floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x171717,
-            roughness: 0.18,
-            metalness: 0.35,
-            transparent: true,
-            opacity: 0.74
-        });
+
         this.createSceneBase();
         this.bindEvents();
         this.resize();
@@ -97,9 +93,7 @@ export class VehiclePreview {
     }
 
     public setTheme(theme: 'dark' | 'light'): void {
-        this.floorMaterial.color.set(theme === 'light' ? 0xd9ddd5 : 0x171717);
-        this.floorMaterial.emissive = new THREE.Color(theme === 'light' ? 0x181a16 : 0x030303);
-        this.floorMaterial.emissiveIntensity = theme === 'light' ? 0.025 : 0.08;
+        this.reflector.material.uniforms['color'].value.set(theme === 'light' ? 0x9a9e98 : 0x1a1a1a);
     }
 
     public isTransitioning(): boolean {
@@ -154,10 +148,15 @@ export class VehiclePreview {
         key.castShadow = true;
         this.scene.add(key);
 
-        const floor = new THREE.Mesh(new THREE.CircleGeometry(3.6, 96), this.floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
-        floor.receiveShadow = true;
-        this.scene.add(floor);
+        this.reflector = new Reflector(new THREE.CircleGeometry(5.0, 128), {
+            clipBias: 0.003,
+            textureWidth: 1024,
+            textureHeight: 1024,
+            color: new THREE.Color(0x1a1a1a),
+            multisample: 4
+        });
+        this.reflector.rotation.x = -Math.PI / 2;
+        this.scene.add(this.reflector);
     }
 
     private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {
