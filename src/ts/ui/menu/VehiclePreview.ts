@@ -4,8 +4,7 @@ import { GlossyShowroomFloor } from './GlossyShowroomFloor';
 
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-// @ts-ignore
-import { SkeletonUtils } from 'three/examples/jsm/utils/SkeletonUtils';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
 export type VehiclePreviewLoadState = 'ready' | 'error' | 'stale';

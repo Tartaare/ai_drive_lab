@@ -106,12 +106,14 @@ export class SceneDebugPanel
 		this.proxyState['toneMapping'] = s.renderer.toneMapping;
 		f.add(this.proxyState, 'toneMapping', tmOptions).name('Tone Mapping').onChange((v: number) =>
 		{
-			s.renderer.toneMapping = v;
+			s.renderer.toneMapping = v as THREE.ToneMapping;
 			s.renderer.toneMappingExposure = s.renderer.toneMappingExposure;
 		});
 
 		f.add(s.renderer.shadowMap, 'enabled').name('Shadows');
-		f.add(s.renderer, 'physicallyCorrectLights').name('Physical Lights');
+		if ('physicallyCorrectLights' in s.renderer) {
+			f.add(s.renderer as any, 'physicallyCorrectLights').name('Physical Lights');
+		}
 		f.close();
 	}
 

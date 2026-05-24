@@ -1,3 +1,35 @@
+# SPRINT glossy-showroom-floor-r3f — Sol showroom glossy Drei
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `package.json`
+- `package-lock.json`
+- `src/ts/react/components/ShowroomVehicleCanvas.tsx`
+- `src/ts/react/components/VehiclePreviewStage.tsx`
+- `src/css/showroom/_vehicle.css`
+- `src/ts/world/track/trackGeometry.ts`
+- `src/ts/ui/SceneDebugPanel.ts`
+- `README.md`
+
+# Validation :
+- Ajout de `@react-three/fiber@8.17.10`, `@react-three/drei@9.122.0` et migration `three@0.159.0`.
+- La preview vehicule du showroom utilise maintenant une scene React Three Fiber avec `MeshReflectorMaterial`, `Environment preset="dawn"`, fog, lumiere directionnelle et sol glossy inspire du template `floor_glossy_reactthree`.
+- Conservation du drag rotation, zoom molette/clavier, preload des vehicules adjacents, fallback modele indisponible et verrouillage de transition.
+- Compatibilite Three modernisee : `vertexColors: true`, import `SkeletonUtils` namespace, garde runtime pour `physicallyCorrectLights` dans le debug panel.
+- `npm install --ignore-scripts --no-audit --no-fund` : succes.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille du chunk `three`.
+- `npm run test:trackgen` : succes sur `406` cas.
+- Serveur local `http://127.0.0.1:5173/` : reponse HTTP `200`, entree React servie.
+
+# Risques restants :
+- Risque moyen : la montee de Three peut modifier subtilement le rendu des assets GLB, du ciel ou des materiaux de piste ; validation visuelle desktop/mobile recommandee.
+- Le plugin Browser etait present, mais l'outil JavaScript requis par le skill n'etait pas expose dans cette session ; la validation visuelle automatisee n'a donc pas pu etre executee.
+- `MeshReflectorMaterial` a ete conserve a `resolution=1024` comme le template ; surveiller les performances sur machines faibles et mobile.
+
 # SPRINT menu-vehicle-loop-logs — Stabilisation changement véhicule showroom
 
 # Date : 2026-05-24

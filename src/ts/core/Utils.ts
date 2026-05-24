@@ -83,7 +83,6 @@ export function setupMeshProperties(child: any): void
 		mat.map.anisotropy = 4;
 		mat.aoMap = child.material.aoMap;
 		mat.transparent = child.material.transparent;
-		mat.skinning = child.material.skinning;
 		child.material = mat;
 	}
 }

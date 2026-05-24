@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export class Wheel
 {
 	public wheelObject: THREE.Object3D;
@@ -32,4 +34,3 @@ export class Wheel
 		}
 	}
 }
-

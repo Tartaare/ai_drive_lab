@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GAME_MODES, TRACKS, VEHICLES, DEFAULT_PROCEDURAL_CONFIG, GameModeDefinition } from '../ui/menu/catalog';
 import { SceneDebugPanel } from '../ui/SceneDebugPanel';
-import { VehiclePreview } from '../ui/menu/VehiclePreview';
 import { World } from '../main';
 import { TrackConfig } from '../world/ProceduralTrack';
 import * as AppStorage from '../core/AppStorage';
 import { Hud } from './components/Hud';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Showroom } from './components/Showroom';
+import { ShowroomVehicleHandle } from './components/ShowroomVehicleCanvas';
 import { getProceduralLength } from './components/TrackMiniature';
 import { AppPhase, MainMenuSelection, ProceduralParamKey, RuntimeCar, TelemetryState, ThemeName } from './types';
 
@@ -31,7 +31,7 @@ export function App(): JSX.Element {
     const [telemetry, setTelemetry] = useState<TelemetryState>(emptyTelemetry);
 
     const worldRef = useRef<World | null>(null);
-    const previewRef = useRef<VehiclePreview | null>(null);
+    const previewRef = useRef<ShowroomVehicleHandle | null>(null);
     const debugPanelRef = useRef(new SceneDebugPanel());
     const sessionStartRef = useRef(0);
     const activeSelectionRef = useRef<MainMenuSelection | null>(null);
