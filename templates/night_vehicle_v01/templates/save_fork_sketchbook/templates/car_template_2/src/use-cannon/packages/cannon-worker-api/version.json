@@ -1,0 +1,7 @@
+{
+  "note": "uses-browser-web-worker-api",
+  "name": "@pmndrs/cannon-worker-api",
+  "version": "2.3.2.altered",
+  "homepage": "https://github.com/pmndrs/use-cannon/tree/master/packages/cannon-worker-api#readme",
+  "repository": "github:pmndrs/use-cannon"
+}

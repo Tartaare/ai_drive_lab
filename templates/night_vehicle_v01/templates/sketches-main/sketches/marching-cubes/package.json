@@ -1,0 +1,19 @@
+{
+    "name": "@sketches/marching-cubes",
+    "private": true,
+    "sketch": {
+        "title": "Marching Cubes",
+        "tags": ["marching-cubes", "c++"]
+    },
+    "scripts": {
+        "dev": "vite dev",
+        "build": "vite build"
+    },
+    "dependencies": {
+        "mathcat": "^0.0.6",
+        "three": "^0.181.1"
+    },
+    "devDependencies": {
+        "@types/three": "^0.181.0"
+    }
+}

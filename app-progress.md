@@ -1,24 +1,3 @@
-# SPRINT showroom-l900i-floor — Sol style Night Train (l900i)
-
-# Date : 2026-05-24
-
-# Statut : termine
-
-# Composants :
-- `src/ts/ui/menu/VehiclePreview.ts`
-
-# Validation :
-- Sol semi-gloss clair `#e8e8e4` avec roughness 0.55 (MeshReflectorMaterial style).
-- Reflector résolution 512x512 pour effet flou naturel.
-- Couche de surface MeshStandardMaterial (roughness 0.55, metalness 0, opacity 0.85).
-- Ombre de contact douce réduite (12x12) à y=0.01.
-- Mise à jour `setTheme()` avec couleurs: sombre `#1a1a1a`, clair `#f5f5f0`.
-- `npm run build` : succes.
-- `npx tsc --noEmit` : succes.
-
-# Risques restants :
-- Validation visuelle manuelle recommandée pour ajuster l'équilibre reflets/surface.
-
 # SPRINT menu-vehicle-loop-logs — Stabilisation changement véhicule showroom
 
 # Date : 2026-05-24

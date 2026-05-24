@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GlossyShowroomFloor } from './menu/GlossyShowroomFloor';
 
 // @ts-ignore — lil-gui ships UMD, Webpack 4 resolves it fine
 import GUI from 'lil-gui';
@@ -26,8 +27,7 @@ export interface SceneDebugSource
 	cameraElevation?: number;
 	cameraDistance?: number;
 	cameraHeight?: number;
-	reflector?: any;
-	shadowCatcher?: THREE.Mesh;
+	showroomFloor?: GlossyShowroomFloor;
 }
 
 export class SceneDebugPanel
@@ -207,14 +207,14 @@ export class SceneDebugPanel
 		f.close();
 	}
 
-	/* ── Floor (reflector + shadow catcher) ───── */
+	/* ── Floor (Showroom Floor) ───── */
 	private buildFloorFolder(s: SceneDebugSource): void
 	{
-		const reflector = s.reflector;
-		const catcher = s.shadowCatcher;
-		if (!reflector && !catcher) return;
+		const floor = s.showroomFloor;
+		if (!floor) return;
 		const f = this.gui!.addFolder('Floor');
 
+		const reflector = floor.reflector;
 		if (reflector && reflector.material && reflector.material.uniforms)
 		{
 			const uniforms = reflector.material.uniforms;
@@ -238,6 +238,7 @@ export class SceneDebugPanel
 			sub.open();
 		}
 
+		const catcher = floor.shadowCatcher;
 		if (catcher)
 		{
 			const mat = catcher.material as THREE.ShadowMaterial;
@@ -248,6 +249,19 @@ export class SceneDebugPanel
 				mat.color.set(v);
 			});
 			sub.add(catcher, 'visible').name('Visible');
+			sub.close();
+		}
+
+		const floorBase = floor.floorBase;
+		if (floorBase && floorBase.material)
+		{
+			const mat = floorBase.material as THREE.MeshPhysicalMaterial;
+			const sub = f.addFolder('Floor Base');
+			sub.add(floorBase, 'visible').name('Visible');
+			sub.add(mat, 'metalness', 0, 1, 0.01).name('Metalness');
+			sub.add(mat, 'roughness', 0, 1, 0.01).name('Roughness');
+			sub.add(mat, 'clearcoat', 0, 1, 0.01).name('Clearcoat');
+			sub.add(mat, 'clearcoatRoughness', 0, 1, 0.01).name('Clearcoat Roughness');
 			sub.close();
 		}
 

@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { VehicleDefinition } from './catalog';
+import { GlossyShowroomFloor } from './GlossyShowroomFloor';
 
 // @ts-ignore
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 // @ts-ignore
 import { SkeletonUtils } from 'three/examples/jsm/utils/SkeletonUtils';
-// @ts-ignore
-import { Reflector } from 'three/examples/jsm/objects/Reflector';
 
 export type VehiclePreviewState = 'idle' | 'loading' | 'ready' | 'error';
 export type VehiclePreviewLoadState = 'ready' | 'error' | 'stale';
@@ -46,8 +45,7 @@ export class VehiclePreview {
     private readonly renderer: THREE.WebGLRenderer;
     private readonly scene: THREE.Scene;
     private readonly camera: THREE.PerspectiveCamera;
-    private reflector!: any;
-    private shadowCatcher!: THREE.Mesh;
+    private showroomFloor!: GlossyShowroomFloor;
     private readonly loader = new GLTFLoader();
     private readonly modelCache: { [path: string]: Promise<CachedVehicleModel> } = {};
     private static readonly SWAP_DURATION_MS = 400;
@@ -101,9 +99,7 @@ export class VehiclePreview {
     }
 
     public setTheme(theme: 'dark' | 'light'): void {
-        const isLight = theme === 'light';
-        // Couleurs semi-gloss: clair #e8e8e4 (defaut), sombre #1a1a1a
-        this.reflector.material.uniforms['color'].value.set(isLight ? 0xf5f5f0 : 0x1a1a1a);
+        this.showroomFloor.setTheme(theme);
     }
 
     public isTransitioning(): boolean {
@@ -183,8 +179,7 @@ export class VehiclePreview {
         cameraElevation: number;
         cameraDistance: number;
         cameraHeight: number;
-        reflector: any;
-        shadowCatcher: THREE.Mesh;
+        showroomFloor: GlossyShowroomFloor;
     } {
         const self = this;
         return {
@@ -199,8 +194,7 @@ export class VehiclePreview {
             set cameraDistance(v: number) { self.setCameraDistance(v / 11.5); },
             get cameraHeight() { return self.cameraHeight; },
             set cameraHeight(v: number) { self.cameraHeight = v; self.applyCameraOrbit(); },
-            reflector: this.reflector,
-            shadowCatcher: this.shadowCatcher
+            showroomFloor: this.showroomFloor
         };
     }
 
@@ -212,6 +206,7 @@ export class VehiclePreview {
         cancelAnimationFrame(this.animationFrame);
         this.abortTransition();
         this.clearActiveVehicle();
+        this.showroomFloor?.dispose();
         this.renderer.dispose();
         if (this.renderer.domElement.parentElement) {
             this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
@@ -219,42 +214,8 @@ export class VehiclePreview {
     }
 
     private createSceneBase(): void {
-        const hemi = new THREE.HemisphereLight(0xffffff, 0x080808, 1.9);
-        this.scene.add(hemi);
-        const key = new THREE.DirectionalLight(0xffffff, 3.4);
-        key.position.set(3.8, 7.2, 4.8);
-        key.castShadow = true;
-        key.shadow.mapSize.width = 2048;
-        key.shadow.mapSize.height = 2048;
-        key.shadow.camera.near = 0.5;
-        key.shadow.camera.far = 24;
-        key.shadow.camera.left = -9;
-        key.shadow.camera.right = 9;
-        key.shadow.camera.top = 9;
-        key.shadow.camera.bottom = -9;
-        this.scene.add(key);
-        const fill = new THREE.DirectionalLight(0xffffff, 1.1);
-        fill.position.set(-4.6, 4.8, -3.2);
-        this.scene.add(fill);
-        const top = new THREE.DirectionalLight(0xffffff, 0.75);
-        top.position.set(0, 9, 0);
-        this.scene.add(top);
-        const rim = new THREE.PointLight(0xffffff, 0.9, 18);
-        rim.position.set(-4.8, 3.4, -4.8);
-        this.scene.add(rim);
-
-        // Sol unique semi-gloss clair #e8e8e4
-        this.reflector = new Reflector(new THREE.PlaneGeometry(80, 80) as unknown as THREE.BufferGeometry, {
-            clipBias: 0.003,
-            textureWidth: 1024,
-            textureHeight: 1024,
-            color: new THREE.Color(0xe8e8e4),
-            multisample: 4
-        } as any);
-        this.reflector.rotation.x = -Math.PI / 2;
-        this.reflector.position.y = 0;
-        this.reflector.receiveShadow = true;
-        this.scene.add(this.reflector);
+        this.showroomFloor = new GlossyShowroomFloor(this.scene);
+        this.showroomFloor.setupLighting();
     }
 
     private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {

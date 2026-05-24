@@ -1,0 +1,7 @@
+{
+  "note": "uses-local-version-of-react-three-cannon",
+  "name": "@react-three/cannon",
+  "version": "6.5.2.altered",
+  "homepage": "https://github.com/pmndrs/use-cannon/tree/master/packages/react-three-cannon#readme",
+  "repository": "github:pmndrs/use-cannon"
+}
