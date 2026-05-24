@@ -1,3 +1,25 @@
+# SPRINT typescript-skyshader-resolution — Stabilisation diagnostics TypeScript
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/lib/shaders/SkyShader.d.ts`
+- `tsconfig.json`
+
+# Validation :
+- Ajout d'une declaration TypeScript locale pour `SkyShader`, avec uniforms Three.js types.
+- Migration de `moduleResolution` vers `Bundler` pour aligner la configuration sur Vite/TypeScript moderne.
+- Suppression de `baseUrl` deprecie et conservation de l'alias `cannon` via cible `paths` relative explicite.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Aucun risque runtime attendu : le shader JavaScript n'est pas modifie, seule sa surface de typage est declaree.
+- La resolution `Bundler` correspond au pipeline Vite actuel ; a surveiller uniquement si un futur tooling Node pur consomme directement `tsconfig.json`.
+
 # SPRINT react-vite-modernization — Migration React/Vite installable
 
 # Date : 2026-05-24
