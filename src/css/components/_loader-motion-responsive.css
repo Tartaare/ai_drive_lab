@@ -173,8 +173,8 @@
         height: 44px;
         font-size: 2.6rem;
     }
-    .vehicle-title h1 {
-        font-size: clamp(2.35rem, 14vw, 3.6rem);
+    .vehicle-info__glass h2 {
+        font-size: clamp(1.3rem, 8vw, 2rem);
     }
     .vehicle-stats {
         grid-template-columns: 1fr 1fr;
