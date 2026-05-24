@@ -37,7 +37,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
         const next = (props.vehicleIndex + 1) % VEHICLES.length;
         return [VEHICLES[prev], VEHICLES[next]];
     }, [props.vehicleIndex]);
-    const proceduralLength = Math.round(getProceduralLength(props.proceduralConfig, props.proceduralSeed, props.proceduralDifficulty));
+    const proceduralLength = useMemo(() => Math.round(getProceduralLength(props.proceduralConfig, props.proceduralSeed, props.proceduralDifficulty)), [props.proceduralConfig, props.proceduralSeed, props.proceduralDifficulty]);
     const isLight = props.theme === 'light';
 
     return (

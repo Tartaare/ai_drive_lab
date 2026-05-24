@@ -1,3 +1,31 @@
+# SPRINT menu-vehicle-loop-logs — Stabilisation changement véhicule showroom
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/ts/react/App.tsx`
+- `src/ts/react/components/VehiclePreviewStage.tsx`
+- `src/ts/ui/menu/VehiclePreview.ts`
+
+# Validation :
+- Le changement de véhicule remet maintenant `vehicleDirection` à `0` en fin de transition afin d'éviter qu'un rendu ultérieur rejoue la même animation directionnelle.
+- `VehiclePreviewStage` ignore explicitement les demandes de rendu du même `vehicle.id` et conserve le preload des véhicules adjacents.
+- `VehiclePreview` ignore aussi un `setVehicle` vers le véhicule déjà actif hors transition.
+- Correction de la cause racine de boucle : l'effet d'hydratation IndexedDB ne depend plus de `selection` via `setTheme`, ce qui evitait une relecture des anciennes preferences a chaque changement de vehicule.
+- La selection vehicule est maintenant persistee au moment du clic pour aligner IndexedDB sur l'etat menu courant.
+- Ajout de logs ciblés `[APEX][VehicleMenu]`, `[APEX][VehicleStage]` et `[APEX][VehiclePreview]` pour tracer demande, skip, fin, stale load et fallback d'erreur modèle.
+- `npm run build` : succes.
+- `npx tsc --noEmit` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+- Serveur local `http://127.0.0.1:5173/` : reponse HTTP `200`.
+
+# Risques restants :
+- Risque faible : les logs console peuvent etre verbeux pendant le diagnostic ; ils sont limites aux changements de vehicule et aux chargements modele, pas a la frame loop.
+- La verification visuelle navigateur integree n'a pas pu etre pilotee dans cette session car l'outil d'execution Browser requis n'etait pas expose.
+- Le depot contenait deja des changements non committes dans des fichiers React avant ce sprint ; ils ont ete preserves.
+
 # SPRINT skyshader-esm-runtime-fix — Compatibilite navigateur SkyShader
 
 # Date : 2026-05-24

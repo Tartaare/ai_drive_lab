@@ -15,6 +15,7 @@ interface VehiclePreviewStageProps {
 export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, theme, previewRef, onTransitionChange }: VehiclePreviewStageProps): JSX.Element {
     const stageRef = useRef<HTMLDivElement | null>(null);
     const statusRef = useRef<HTMLDivElement | null>(null);
+    const lastVehicleIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (!stageRef.current || !statusRef.current) return;
@@ -35,8 +36,29 @@ export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, them
     useEffect(() => {
         const preview = previewRef.current;
         if (!preview) return;
+
+        if (lastVehicleIdRef.current === vehicle.id) {
+            console.info('[APEX][VehicleStage] duplicate vehicle render ignored', {
+                vehicleId: vehicle.id,
+                direction
+            });
+            preview.preload(adjacentVehicles);
+            return;
+        }
+
+        lastVehicleIdRef.current = vehicle.id;
+        console.info('[APEX][VehicleStage] vehicle render requested', {
+            vehicleId: vehicle.id,
+            direction
+        });
         onTransitionChange(direction !== 0);
-        void preview.setVehicle(vehicle, direction).finally(() => onTransitionChange(false));
+        void preview.setVehicle(vehicle, direction).then((state) => {
+            console.info('[APEX][VehicleStage] vehicle render completed', {
+                vehicleId: vehicle.id,
+                direction,
+                state
+            });
+        }).finally(() => onTransitionChange(false));
         preview.preload(adjacentVehicles);
     }, [adjacentVehicles, direction, onTransitionChange, previewRef, vehicle]);
 

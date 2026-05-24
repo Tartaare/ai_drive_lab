@@ -4,10 +4,10 @@
     top: 2rem;
     right: 2rem;
     z-index: 6;
-    width: 48px;
-    height: 48px;
+    width: 30px;
+    height: 30px;
     border: 1px solid var(--c-panel-bevel);
-    border-radius: 15px;
+    border-radius: 12px;
     background:
         linear-gradient(145deg, rgba(255, 255, 255, 0.08), transparent 42%),
         rgba(14, 14, 17, 0.82);
@@ -17,6 +17,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    font-size: 0;
     box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     animation: showroomPanelIn 0.7s var(--ease-smooth) 0.16s both;
     transition: border-color 0.3s var(--ease-smooth), background 0.3s var(--ease-smooth), transform 0.2s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth);
@@ -33,28 +35,32 @@
 
 .theme-toggle__track {
     position: relative;
-    width: 28px;
-    height: 28px;
+    width: 16px;
+    height: 16px;
     display: grid;
     place-items: center;
+    line-height: 1;
 }
 
 .theme-toggle__orb {
     position: relative;
-    width: 28px;
-    height: 28px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: transparent;
     color: #f6f6f8;
     display: grid;
     place-items: center;
+    font-size: 0;
     transition: transform 0.45s var(--ease-smooth), color 0.3s var(--ease-smooth);
 }
 
 .theme-toggle__icon {
     grid-area: 1 / 1;
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
+    font-size: 18px;
+    line-height: 1;
     stroke-width: 2.4;
     transition: opacity 0.25s var(--ease-smooth), transform 0.45s var(--ease-smooth);
 }

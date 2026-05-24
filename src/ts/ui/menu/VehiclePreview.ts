@@ -59,6 +59,7 @@ export class VehiclePreview {
     private readonly tempCameraSpaceCenter = new THREE.Vector3();
     private activeVehicle: VehicleSceneNode | null = null;
     private transition: VehicleSwapTransition | null = null;
+    private currentVehicleId = '';
     private animationFrame = 0;
     private loadToken = 0;
     private rotationY = 0;
@@ -109,24 +110,59 @@ export class VehiclePreview {
     }
 
     public setVehicle(vehicle: VehicleDefinition, direction: -1 | 0 | 1): Promise<VehiclePreviewLoadState> {
+        if (this.currentVehicleId === vehicle.id && !this.transition) {
+            console.info('[APEX][VehiclePreview] setVehicle skipped: already active', {
+                vehicleId: vehicle.id,
+                direction
+            });
+            return Promise.resolve('ready');
+        }
+
         const token = ++this.loadToken;
         const shouldAnimateSwap = direction !== 0 && this.activeVehicle !== null && !this.reduceMotionQuery.matches;
+        console.info('[APEX][VehiclePreview] setVehicle requested', {
+            vehicleId: vehicle.id,
+            modelPath: vehicle.modelPath,
+            direction,
+            shouldAnimateSwap
+        });
         this.setState(shouldAnimateSwap ? 'ready' : 'loading', '');
         return new Promise((resolve) => {
+            const complete = (state: VehiclePreviewLoadState): void => {
+                if (state !== 'stale') this.currentVehicleId = vehicle.id;
+                console.info('[APEX][VehiclePreview] setVehicle completed', {
+                    vehicleId: vehicle.id,
+                    state
+                });
+                resolve(state);
+            };
             this.loadModel(vehicle.modelPath).then((cached) => {
                 if (token !== this.loadToken) {
-                    resolve('stale');
+                    console.warn('[APEX][VehiclePreview] stale vehicle load ignored', {
+                        vehicleId: vehicle.id,
+                        modelPath: vehicle.modelPath
+                    });
+                    complete('stale');
                     return;
                 }
                 const incoming = this.createSceneNode(this.cloneModelScene(cached.scene), cached.animations);
-                this.mountIncomingVehicle(incoming, direction, resolve, 'ready');
-            }).catch(() => {
+                this.mountIncomingVehicle(incoming, direction, complete, 'ready');
+            }).catch((error) => {
                 if (token !== this.loadToken) {
-                    resolve('stale');
+                    console.warn('[APEX][VehiclePreview] stale vehicle error ignored', {
+                        vehicleId: vehicle.id,
+                        modelPath: vehicle.modelPath
+                    });
+                    complete('stale');
                     return;
                 }
+                console.warn('[APEX][VehiclePreview] model load failed, using fallback', {
+                    vehicleId: vehicle.id,
+                    modelPath: vehicle.modelPath,
+                    error
+                });
                 const fallback = this.createFallbackNode();
-                this.mountIncomingVehicle(fallback, direction, resolve, 'error');
+                this.mountIncomingVehicle(fallback, direction, complete, 'error');
                 this.setState('error', 'Modèle indisponible');
             });
         });

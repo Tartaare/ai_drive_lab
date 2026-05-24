@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { generateTrack, TrackConfig } from '../../world/ProceduralTrack';
+import { generateTrack, TrackConfig, TrackData } from '../../world/ProceduralTrack';
 
 interface TrackMiniatureProps {
     config: TrackConfig;
@@ -7,13 +7,30 @@ interface TrackMiniatureProps {
     difficulty: string;
 }
 
-export function getProceduralLength(config: TrackConfig, seed: number, difficulty: string): number {
+// Cache global pour éviter les régénérations avec les mêmes paramètres
+const trackCache = new Map<string, TrackData>();
+
+function getCacheKey(config: TrackConfig, seed: number, difficulty: string): string {
+    return `${seed}-${difficulty}-${config.numControlPoints}-${config.baseRadius}-${config.radiusVariation}-${config.angleVariation}-${config.trackWidth}`;
+}
+
+function getCachedTrack(config: TrackConfig, seed: number, difficulty: string): TrackData {
+    const key = getCacheKey(config, seed, difficulty);
+    if (trackCache.has(key)) {
+        return trackCache.get(key)!;
+    }
     const track = generateTrack({ ...config, seed, difficulty });
+    trackCache.set(key, track);
+    return track;
+}
+
+export function getProceduralLength(config: TrackConfig, seed: number, difficulty: string): number {
+    const track = getCachedTrack(config, seed, difficulty);
     return track.qaReport ? track.qaReport.length : 0;
 }
 
 export function TrackMiniature({ config, seed, difficulty }: TrackMiniatureProps): JSX.Element {
-    const track = useMemo(() => generateTrack({ ...config, seed, difficulty }), [config, seed, difficulty]);
+    const track = useMemo(() => getCachedTrack(config, seed, difficulty), [config, seed, difficulty]);
     const points = track.centerPoints;
 
     if (points.length < 2) {

@@ -42,7 +42,8 @@ export function App(): JSX.Element {
         const mode = GAME_MODES.find((item) => item.id === modeId) || GAME_MODES[0];
         const track = mode.trackId ? TRACKS.find((item) => item.id === mode.trackId) || TRACKS[0] : null;
         const isValid = !!track && !mode.unavailableReason && !!mode.trackId && trackAvailability[mode.trackId] === true;
-        const lengthMeters = getProceduralLength(proceduralConfig, proceduralSeed, proceduralDifficulty);
+        // Éviter la génération de circuit pendant le chargement initial
+        const lengthMeters = phase === 'loading' ? 0 : getProceduralLength(proceduralConfig, proceduralSeed, proceduralDifficulty);
         return {
             vehicleId: vehicle.id,
             vehicleModelPath: vehicle.modelPath,
@@ -52,7 +53,7 @@ export function App(): JSX.Element {
             isValid,
             procedural: track && track.id === 'procedural' ? { seed: proceduralSeed, difficulty: proceduralDifficulty, config: proceduralConfig, lengthMeters } : null
         };
-    }, [modeId, proceduralConfig, proceduralDifficulty, proceduralSeed, trackAvailability, vehicleIndex]);
+    }, [modeId, phase, proceduralConfig, proceduralDifficulty, proceduralSeed, trackAvailability, vehicleIndex]);
 
     const loadFavorites = useCallback(() => {
         void AppStorage.getFavorites().then(setFavorites).catch(() => setFavorites([]));
@@ -73,7 +74,7 @@ export function App(): JSX.Element {
         }, 300);
     }, []);
 
-    const setTheme = useCallback((nextTheme: ThemeName) => {
+    const applyTheme = useCallback((nextTheme: ThemeName) => {
         document.documentElement.dataset.theme = nextTheme;
         try {
             window.localStorage.setItem('apex-theme', nextTheme);
@@ -82,8 +83,12 @@ export function App(): JSX.Element {
         }
         previewRef.current?.setTheme(nextTheme);
         setThemeState(nextTheme);
+    }, []);
+
+    const setTheme = useCallback((nextTheme: ThemeName) => {
+        applyTheme(nextTheme);
         void AppStorage.savePrefs({ vehicleId: selection.vehicleId, levelId: selection.levelId, theme: nextTheme }).catch(() => undefined);
-    }, [selection.levelId, selection.vehicleId]);
+    }, [applyTheme, selection.levelId, selection.vehicleId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -97,9 +102,15 @@ export function App(): JSX.Element {
             }
             if (prefs && !cancelled) {
                 const storedVehicleIndex = VEHICLES.findIndex((vehicle) => vehicle.id === prefs.vehicleId);
-                if (storedVehicleIndex >= 0) setVehicleIndex(storedVehicleIndex);
+                if (storedVehicleIndex >= 0) {
+                    console.info('[APEX][VehicleMenu] hydrate vehicle preference', {
+                        vehicleId: prefs.vehicleId,
+                        vehicleIndex: storedVehicleIndex
+                    });
+                    setVehicleIndex(storedVehicleIndex);
+                }
                 nextMode = prefs.levelId === 'default' ? 'time_trial' : 'free_roam';
-                setTheme(prefs.theme === 'light' ? 'light' : 'dark');
+                applyTheme(prefs.theme === 'light' ? 'light' : 'dark');
             }
             const grandPrix = TRACKS.find((track) => track.id === 'grand_prix');
             let grandPrixAvailable = false;
@@ -117,7 +128,7 @@ export function App(): JSX.Element {
         return () => {
             cancelled = true;
         };
-    }, [loadFavorites, setTheme]);
+    }, [applyTheme, loadFavorites]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -207,9 +218,27 @@ export function App(): JSX.Element {
 
     const changeVehicle = useCallback((direction: -1 | 1) => {
         if (transitionLocked) return;
+        console.info('[APEX][VehicleMenu] vehicle change requested', { direction, fromIndex: vehicleIndex });
         setPreviousVehicleDirection(direction);
-        setVehicleIndex((index) => (index + direction + VEHICLES.length) % VEHICLES.length);
-    }, [transitionLocked]);
+        setVehicleIndex((index) => {
+            const nextIndex = (index + direction + VEHICLES.length) % VEHICLES.length;
+            const nextVehicle = VEHICLES[nextIndex] || VEHICLES[0];
+            console.info('[APEX][VehicleMenu] vehicle index committed', {
+                direction,
+                fromIndex: index,
+                toIndex: nextIndex,
+                vehicleId: nextVehicle.id
+            });
+            void AppStorage.savePrefs({ vehicleId: nextVehicle.id, levelId: selection.levelId, theme }).catch(() => undefined);
+            return nextIndex;
+        });
+    }, [selection.levelId, theme, transitionLocked, vehicleIndex]);
+
+    const handleVehicleTransitionChange = useCallback((locked: boolean) => {
+        setTransitionLocked(locked);
+        if (!locked) setPreviousVehicleDirection(0);
+        console.info('[APEX][VehicleMenu] vehicle transition lock changed', { locked });
+    }, []);
 
     const randomizeMenuTrack = useCallback(() => {
         const seed = Math.floor(Math.random() * 1000000);
@@ -302,7 +331,7 @@ export function App(): JSX.Element {
             <div id="game-container" />
             <div className="ui-layer" id="ui-layer">
                 {phase === 'loading' && <div id="loading" className="loader-overlay"><h3>INITIALIZING ENGINE</h3><div className="loader-bar"><div className="loader-progress" /></div></div>}
-                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={setTransitionLocked} />}
+                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={handleVehicleTransitionChange} />}
                 {phase === 'driving' && <><button id="toggle-settings" className={`settings-toggle${showSettings ? '' : ' hidden'}`} type="button" aria-label="Ouvrir la configuration de piste" onClick={() => setSettingsOpen((open) => !open)}>⚙</button><Hud telemetry={telemetry} /><div id="pause-overlay" className={`menu-overlay${paused ? '' : ' hidden'}`}><h1>PAUSED</h1><div className="menu-grid"><button id="resume-game" className="cyber-btn" type="button" onClick={() => worldRef.current?.resume()}>RESUME</button><button id="back-to-menu" className="cyber-btn cyber-btn--danger" type="button" onClick={stopGame}>ABORT SESSION</button></div></div>{showSettings && <SettingsPanel active={settingsOpen} config={proceduralConfig} difficulty={proceduralDifficulty} pending={generationPending} favorites={favorites} onClose={() => setSettingsOpen(false)} onRegenerate={regenerateTrack} onDifficultyChange={changeDifficulty} onParameterChange={changeParameter} onSaveFavorite={saveFavorite} onLoadFavorite={loadFavorite} onDeleteFavorite={deleteFavorite} />}</>}
             </div>
         </>
