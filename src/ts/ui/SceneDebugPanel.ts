@@ -25,6 +25,7 @@ export interface SceneDebugSource
 	cameraAzimuth?: number;
 	cameraElevation?: number;
 	cameraDistance?: number;
+	cameraHeight?: number;
 }
 
 export class SceneDebugPanel
@@ -126,6 +127,7 @@ export class SceneDebugPanel
 		if (typeof s.cameraAzimuth === 'number') f.add(s as any, 'cameraAzimuth', -180, 180, 1).name('Azimuth (°)').listen();
 		if (typeof s.cameraElevation === 'number') f.add(s as any, 'cameraElevation', -10, 80, 1).name('Elevation (°)').listen();
 		if (typeof s.cameraDistance === 'number') f.add(s as any, 'cameraDistance', 5, 25, 0.5).name('Distance');
+		if (typeof s.cameraHeight === 'number') f.add(s as any, 'cameraHeight', -2, 5, 0.05).name('Height');
 		f.close();
 	}
 

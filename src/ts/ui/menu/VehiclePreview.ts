@@ -71,6 +71,7 @@ export class VehiclePreview {
     private cameraDistance = 1.22;
     private cameraAzimuth = 0;
     private cameraElevation = 16;
+    private cameraHeight = 0.74;
     private debugOrbitMode = false;
     private readonly reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -143,6 +144,7 @@ export class VehiclePreview {
         cameraAzimuth: number;
         cameraElevation: number;
         cameraDistance: number;
+        cameraHeight: number;
     } {
         const self = this;
         return {
@@ -154,7 +156,9 @@ export class VehiclePreview {
             get cameraElevation() { return self.cameraElevation; },
             set cameraElevation(v: number) { self.cameraElevation = THREE.MathUtils.clamp(v, -10, 80); self.applyCameraOrbit(); },
             get cameraDistance() { return self.cameraDistance; },
-            set cameraDistance(v: number) { self.setCameraDistance(v / 11.5); }
+            set cameraDistance(v: number) { self.setCameraDistance(v / 11.5); },
+            get cameraHeight() { return self.cameraHeight; },
+            set cameraHeight(v: number) { self.cameraHeight = v; self.applyCameraOrbit(); }
         };
     }
 
@@ -512,7 +516,7 @@ export class VehiclePreview {
         const z = horiz * Math.cos(azRad);
         this.camera.up.set(0, 1, 0);
         this.camera.position.set(x, Math.max(y, 0.3), z);
-        this.camera.lookAt(0, 0.74, 0);
+        this.camera.lookAt(0, this.cameraHeight, 0);
     }
 
     private handleZoomInput(direction: -1 | 1, event?: Event): void {
