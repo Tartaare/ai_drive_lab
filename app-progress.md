@@ -1,3 +1,22 @@
+# SPRINT skyshader-esm-runtime-fix — Compatibilite navigateur SkyShader
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `src/lib/shaders/SkyShader.js`
+
+# Validation :
+- Remplacement du chargement CommonJS `require('three')` par un import ESM compatible Vite/navigateur.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Risque faible : le contenu GLSL et le contrat exporte `SkyShader` ne changent pas.
+- Validation navigateur manuelle recommandee sur le demarrage de la scene pour confirmer l'absence de regression visuelle du ciel.
+
 # SPRINT typescript-skyshader-resolution — Stabilisation diagnostics TypeScript
 
 # Date : 2026-05-24
