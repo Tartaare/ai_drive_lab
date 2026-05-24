@@ -93,9 +93,8 @@ export class VehiclePreview {
     }
 
     public setTheme(theme: 'dark' | 'light'): void {
-        const bg = theme === 'light' ? 0xe8e8e8 : 0x111111;
-        (this.scene.background as THREE.Color).set(bg);
-        this.reflector.material.uniforms['color'].value.set(bg);
+        const isLight = theme === 'light';
+        this.reflector.material.uniforms['color'].value.set(isLight ? 0xa8ada6 : 0x161616);
     }
 
     public isTransitioning(): boolean {
@@ -132,6 +131,10 @@ export class VehiclePreview {
         });
     }
 
+    public getSceneRefs(): { renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera } {
+        return { renderer: this.renderer, scene: this.scene, camera: this.camera };
+    }
+
     public dispose(): void {
         cancelAnimationFrame(this.animationFrame);
         this.abortTransition();
@@ -143,34 +146,49 @@ export class VehiclePreview {
     }
 
     private createSceneBase(): void {
-        this.scene.background = new THREE.Color(0x111111);
-
-        // Softbox éclairage studio : enveloppant, sans rim colorée
-        const hemi = new THREE.HemisphereLight(0xffffff, 0x1a1a1a, 2.2);
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x080808, 1.9);
         this.scene.add(hemi);
-        const key = new THREE.DirectionalLight(0xffffff, 2.8);
-        key.position.set(3, 8, 4);
+        const key = new THREE.DirectionalLight(0xffffff, 3.4);
+        key.position.set(3.8, 7.2, 4.8);
         key.castShadow = true;
         key.shadow.mapSize.width = 2048;
         key.shadow.mapSize.height = 2048;
+        key.shadow.camera.near = 0.5;
+        key.shadow.camera.far = 24;
+        key.shadow.camera.left = -9;
+        key.shadow.camera.right = 9;
+        key.shadow.camera.top = 9;
+        key.shadow.camera.bottom = -9;
         this.scene.add(key);
-        const fill = new THREE.DirectionalLight(0xffffff, 1.2);
-        fill.position.set(-4, 5, -3);
+        const fill = new THREE.DirectionalLight(0xffffff, 1.1);
+        fill.position.set(-4.6, 4.8, -3.2);
         this.scene.add(fill);
-        const top = new THREE.DirectionalLight(0xffffff, 0.8);
-        top.position.set(0, 10, 0);
+        const top = new THREE.DirectionalLight(0xffffff, 0.75);
+        top.position.set(0, 9, 0);
         this.scene.add(top);
+        const rim = new THREE.PointLight(0xffffff, 0.9, 18);
+        rim.position.set(-4.8, 3.4, -4.8);
+        this.scene.add(rim);
 
-        // Sol plan large — même couleur que le fond → fondu infinity cove
-        this.reflector = new Reflector(new THREE.PlaneGeometry(60, 60), {
+        this.reflector = new Reflector(new THREE.PlaneGeometry(80, 80), {
             clipBias: 0.003,
             textureWidth: 1024,
             textureHeight: 1024,
-            color: new THREE.Color(0x111111),
+            color: new THREE.Color(0x161616),
             multisample: 4
         });
         this.reflector.rotation.x = -Math.PI / 2;
+        this.reflector.position.y = 0;
         this.scene.add(this.reflector);
+
+        const shadowCatcher = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80),
+            new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.28 })
+        );
+        shadowCatcher.rotation.x = -Math.PI / 2;
+        shadowCatcher.position.y = 0.018;
+        shadowCatcher.receiveShadow = true;
+        this.scene.add(shadowCatcher);
     }
 
     private createSceneNode(model: THREE.Object3D, animations: any[]): VehicleSceneNode {
@@ -438,7 +456,8 @@ export class VehiclePreview {
     }
 
     private applyCameraDistance(): void {
-        this.camera.position.set(11.4 * this.cameraDistance, 3.45 * this.cameraDistance, 1.6 * this.cameraDistance);
+        this.camera.up.set(0, 1, 0);
+        this.camera.position.set(0, 3.45 * this.cameraDistance, 11.5 * this.cameraDistance);
         this.camera.lookAt(0, 0.74, 0);
     }
 

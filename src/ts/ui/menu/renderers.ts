@@ -23,7 +23,7 @@ export function createModeButton(
     return button;
 }
 
-export function renderVehicleStats(container: HTMLElement, vehicle: VehicleDefinition, previous?: VehicleDefinition | null): void {
+export function renderVehicleStats(container: HTMLElement, vehicle: VehicleDefinition, previous?: VehicleDefinition | null, shouldAnimateBars: boolean = false): void {
     container.innerHTML = '';
     Object.keys(vehicle.stats).forEach((key) => {
         const statKey = key as VehicleStatKey;
@@ -33,15 +33,26 @@ export function renderVehicleStats(container: HTMLElement, vehicle: VehicleDefin
         const ratio = Math.min(stat.value / stat.max, 1);
         const deltaClass = delta > 0 ? ' vehicle-stat__delta--up' : delta < 0 ? ' vehicle-stat__delta--down' : '';
         const deltaText = delta > 0 ? '▲' : delta < 0 ? '▼' : '';
+        const animatingClass = shouldAnimateBars ? ' vehicle-stat--animating' : '';
         const item = document.createElement('div');
-        item.className = 'vehicle-stat';
+        item.className = 'vehicle-stat' + animatingClass;
+        const initialRatio = shouldAnimateBars && previousStat 
+            ? Math.min(previousStat.value / previousStat.max, 1) 
+            : ratio;
         item.innerHTML =
             '<span class="vehicle-stat__label">' + stat.label + '</span>' +
             '<div class="vehicle-stat__meter">' +
-                '<span class="vehicle-stat__bar"><span style="transform:scaleX(' + ratio.toFixed(3) + ')"></span></span>' +
+                '<span class="vehicle-stat__bar" style="--bar-ratio: ' + initialRatio.toFixed(3) + '"><span class="vehicle-stat__bar__fill"></span></span>' +
                 '<span class="vehicle-stat__score">' + stat.value + '</span>' +
             '</div>' +
             '<span class="vehicle-stat__delta' + deltaClass + '" aria-hidden="true">' + deltaText + '</span>';
         container.appendChild(item);
+        
+        if (shouldAnimateBars) {
+            const barElement = item.querySelector('.vehicle-stat__bar') as HTMLElement;
+            requestAnimationFrame(() => {
+                barElement.style.setProperty('--bar-ratio', ratio.toFixed(3));
+            });
+        }
     });
 }

@@ -1,0 +1,299 @@
+import * as THREE from 'three';
+
+// @ts-ignore — lil-gui ships UMD, Webpack 4 resolves it fine
+import GUI from 'lil-gui';
+
+export interface SceneDebugSource
+{
+	renderer: THREE.WebGLRenderer;
+	camera: THREE.PerspectiveCamera;
+	scene: THREE.Scene;
+	sky?: {
+		sunLight: THREE.DirectionalLight;
+		sunPosition: THREE.Vector3;
+		theta: number;
+		phi: number;
+	};
+	dayNight?: {
+		timeOfDayHours: number;
+		setTimeOfDay(h: number): void;
+		setHoursPerSecond(v: number): void;
+	};
+	cameraRadius?: number;
+	cameraPhi?: number;
+	cameraSensitivity?: number;
+}
+
+export class SceneDebugPanel
+{
+	private gui: GUI | null = null;
+	private source: SceneDebugSource | null = null;
+	private visible = false;
+	private proxyState: Record<string, any> = {};
+
+	public toggle(source?: SceneDebugSource): void
+	{
+		if (this.visible)
+		{
+			this.destroy();
+			return;
+		}
+		if (source) this.source = source;
+		if (!this.source) return;
+		this.build();
+	}
+
+	public isVisible(): boolean
+	{
+		return this.visible;
+	}
+
+	public destroy(): void
+	{
+		if (this.gui)
+		{
+			this.gui.destroy();
+			this.gui = null;
+		}
+		this.proxyState = {};
+		this.visible = false;
+	}
+
+	public setTarget(source: SceneDebugSource): void
+	{
+		this.source = source;
+		if (this.visible)
+		{
+			this.destroy();
+			this.build();
+		}
+	}
+
+	private build(): void
+	{
+		const s = this.source!;
+		this.gui = new GUI({ title: 'SCENE DEBUG', width: 320 });
+		this.gui.domElement.classList.add('apex-debug-gui');
+		this.visible = true;
+
+		this.buildRendererFolder(s);
+		this.buildCameraFolder(s);
+		this.buildLightsFolder(s);
+		if (s.dayNight) this.buildDayNightFolder(s);
+		this.buildFogFolder(s);
+		this.buildMaterialsFolder(s);
+		this.buildShadowFolder(s);
+	}
+
+	/* ── Renderer ─────────────────────────────── */
+	private buildRendererFolder(s: SceneDebugSource): void
+	{
+		const f = this.gui!.addFolder('Renderer');
+		f.add(s.renderer, 'toneMappingExposure', 0, 3, 0.01).name('Exposure');
+
+		const tmOptions: Record<string, number> = {
+			None: THREE.NoToneMapping,
+			Linear: THREE.LinearToneMapping,
+			Reinhard: THREE.ReinhardToneMapping,
+			ACESFilmic: THREE.ACESFilmicToneMapping,
+		};
+		this.proxyState['toneMapping'] = s.renderer.toneMapping;
+		f.add(this.proxyState, 'toneMapping', tmOptions).name('Tone Mapping').onChange((v: number) =>
+		{
+			s.renderer.toneMapping = v;
+			s.renderer.toneMappingExposure = s.renderer.toneMappingExposure;
+		});
+
+		f.add(s.renderer.shadowMap, 'enabled').name('Shadows');
+		f.add(s.renderer, 'physicallyCorrectLights').name('Physical Lights');
+		f.close();
+	}
+
+	/* ── Camera ───────────────────────────────── */
+	private buildCameraFolder(s: SceneDebugSource): void
+	{
+		const f = this.gui!.addFolder('Camera');
+		f.add(s.camera, 'fov', 10, 120, 1).name('FOV').onChange(() => s.camera.updateProjectionMatrix());
+		f.add(s.camera, 'near', 0.01, 10, 0.01).name('Near Clip').onChange(() => s.camera.updateProjectionMatrix());
+		f.add(s.camera, 'far', 10, 5000, 10).name('Far Clip').onChange(() => s.camera.updateProjectionMatrix());
+
+		if (typeof s.cameraRadius === 'number') f.add(s as any, 'cameraRadius', 2, 30, 0.5).name('Follow Distance');
+		if (typeof s.cameraPhi === 'number') f.add(s as any, 'cameraPhi', -60, 60, 1).name('Follow Elevation');
+		if (typeof s.cameraSensitivity === 'number') f.add(s as any, 'cameraSensitivity', 0.05, 1, 0.01).name('Mouse Sensitivity');
+		f.close();
+	}
+
+	/* ── Lights (auto-discovered) ─────────────── */
+	private buildLightsFolder(s: SceneDebugSource): void
+	{
+		const lights = this.collectLights(s.scene);
+		if (lights.length === 0) return;
+		const f = this.gui!.addFolder('Lights');
+
+		lights.forEach((light, i) =>
+		{
+			const label = this.lightLabel(light, i);
+			const sub = f.addFolder(label);
+			sub.add(light, 'intensity', 0, 10, 0.01).name('Intensity');
+			sub.addColor({ color: '#' + light.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
+			{
+				light.color.set(v);
+			});
+
+			if ((light as any).isDirectionalLight || (light as any).isSpotLight)
+			{
+				sub.add(light, 'castShadow').name('Cast Shadow');
+			}
+
+			if ((light as any).isPointLight)
+			{
+				sub.add(light as THREE.PointLight, 'distance', 0, 100, 0.5).name('Distance');
+				sub.add(light as THREE.PointLight, 'decay', 0, 5, 0.1).name('Decay');
+			}
+
+			sub.add(light.position, 'x', -20, 20, 0.1).name('Pos X');
+			sub.add(light.position, 'y', -20, 20, 0.1).name('Pos Y');
+			sub.add(light.position, 'z', -20, 20, 0.1).name('Pos Z');
+			sub.close();
+		});
+
+		f.open();
+	}
+
+	/* ── Day/Night Cycle ──────────────────────── */
+	private buildDayNightFolder(s: SceneDebugSource): void
+	{
+		const dn = s.dayNight!;
+		const f = this.gui!.addFolder('Day / Night');
+		this.proxyState['timeOfDay'] = dn.timeOfDayHours;
+		this.proxyState['cycleSpeed'] = 0.02;
+
+		f.add(this.proxyState, 'timeOfDay', 0, 24, 0.1).name('Time of Day (h)').onChange((v: number) =>
+		{
+			dn.setTimeOfDay(v);
+		}).listen();
+
+		f.add(this.proxyState, 'cycleSpeed', 0, 2, 0.01).name('Cycle Speed (h/s)').onChange((v: number) =>
+		{
+			dn.setHoursPerSecond(v);
+		});
+		f.open();
+	}
+
+	/* ── Fog ──────────────────────────────────── */
+	private buildFogFolder(s: SceneDebugSource): void
+	{
+		const fog = s.scene.fog as THREE.FogExp2 | null;
+		if (!fog) return;
+		const f = this.gui!.addFolder('Fog');
+		if ((fog as any).density !== undefined)
+		{
+			f.add(fog as any, 'density', 0, 0.01, 0.00005).name('Density');
+		}
+		f.addColor({ color: '#' + fog.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
+		{
+			fog.color.set(v);
+		});
+		f.close();
+	}
+
+	/* ── Materials (auto-discovered meshes) ───── */
+	private buildMaterialsFolder(s: SceneDebugSource): void
+	{
+		const meshes = this.collectStandardMeshes(s.scene);
+		if (meshes.length === 0) return;
+		const f = this.gui!.addFolder('Materials');
+
+		meshes.forEach((entry) =>
+		{
+			const sub = f.addFolder(entry.name);
+			sub.add(entry.mat, 'roughness', 0, 1, 0.01).name('Roughness');
+			sub.add(entry.mat, 'metalness', 0, 1, 0.01).name('Metalness');
+			sub.addColor({ color: '#' + entry.mat.color.getHexString() }, 'color').name('Color').onChange((v: string) =>
+			{
+				entry.mat.color.set(v);
+			});
+			if (entry.mesh.receiveShadow !== undefined) sub.add(entry.mesh, 'receiveShadow').name('Receive Shadow');
+			if (entry.mesh.castShadow !== undefined) sub.add(entry.mesh, 'castShadow').name('Cast Shadow');
+			sub.close();
+		});
+
+		f.close();
+	}
+
+	/* ── Shadow Camera ────────────────────────── */
+	private buildShadowFolder(s: SceneDebugSource): void
+	{
+		const dirLight = this.findFirstShadowCaster(s.scene);
+		if (!dirLight) return;
+		const shadow = dirLight.shadow;
+		const cam = shadow.camera as THREE.OrthographicCamera;
+		if (!cam || cam.type !== 'OrthographicCamera') return;
+
+		const f = this.gui!.addFolder('Shadow Camera');
+		f.add(cam, 'near', 0.1, 50, 0.5).name('Near').onChange(() => cam.updateProjectionMatrix());
+		f.add(cam, 'far', 50, 2000, 10).name('Far').onChange(() => cam.updateProjectionMatrix());
+
+		this.proxyState['shadowSize'] = cam.right;
+		f.add(this.proxyState, 'shadowSize', 10, 200, 5).name('Ortho Size').onChange((v: number) =>
+		{
+			cam.left = -v;
+			cam.right = v;
+			cam.top = v;
+			cam.bottom = -v;
+			cam.updateProjectionMatrix();
+		});
+		f.close();
+	}
+
+	/* ── Helpers ──────────────────────────────── */
+	private collectLights(scene: THREE.Scene): THREE.Light[]
+	{
+		const results: THREE.Light[] = [];
+		scene.traverse((child: THREE.Object3D) =>
+		{
+			if ((child as any).isLight) results.push(child as THREE.Light);
+		});
+		return results;
+	}
+
+	private lightLabel(light: THREE.Light, index: number): string
+	{
+		if ((light as any).isDirectionalLight) return 'Dir ' + index;
+		if ((light as any).isPointLight) return 'Point ' + index;
+		if ((light as any).isHemisphereLight) return 'Hemi ' + index;
+		if ((light as any).isSpotLight) return 'Spot ' + index;
+		if ((light as any).isAmbientLight) return 'Ambient ' + index;
+		return 'Light ' + index;
+	}
+
+	private collectStandardMeshes(scene: THREE.Scene): Array<{ name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }>
+	{
+		const results: Array<{ name: string; mesh: THREE.Mesh; mat: THREE.MeshStandardMaterial }> = [];
+		const seen = new Set<number>();
+		scene.traverse((child: THREE.Object3D) =>
+		{
+			const mesh = child as THREE.Mesh;
+			if (!mesh.isMesh || !mesh.material) return;
+			const mat = mesh.material as THREE.MeshStandardMaterial;
+			if (!(mat as any).isMeshStandardMaterial) return;
+			if (seen.has(mat.id)) return;
+			seen.add(mat.id);
+			const name = mesh.name || mesh.geometry.type || 'Mesh ' + mat.id;
+			results.push({ name, mesh, mat });
+		});
+		return results;
+	}
+
+	private findFirstShadowCaster(scene: THREE.Scene): THREE.DirectionalLight | null
+	{
+		let result: THREE.DirectionalLight | null = null;
+		scene.traverse((child: THREE.Object3D) =>
+		{
+			if (result) return;
+			const dl = child as THREE.DirectionalLight;
+			if (dl.isDirectionalLight && dl.castShadow) result = dl;
+		});
+		return result;
+	}
+}

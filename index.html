@@ -424,6 +424,9 @@
                 proceduralConfig: selection.procedural.config
             } : undefined);
 
+            // Bind debug panel to new world instance
+            if (sceneDebugPanel && world) sceneDebugPanel.setTarget(world);
+
             // Persist user preferences
             var AS = SimpleCar.AppStorage;
             if (AS) {
@@ -471,6 +474,7 @@
                     }).catch(function() {});
                 }
             }
+            if (sceneDebugPanel) sceneDebugPanel.destroy();
             if (world && world.dispose) world.dispose();
             world = null;
             gameStarted = false;
@@ -519,8 +523,23 @@
             ui.settingsPanel.classList.remove('active');
         });
 
+        // --- Scene Debug Panel (F3) ---
+        var sceneDebugPanel = new SimpleCar.SceneDebugPanel();
+
+        function getDebugSource() {
+            if (world) return world;
+            if (showroomMenu && showroomMenu.preview && showroomMenu.preview.getSceneRefs) {
+                return showroomMenu.preview.getSceneRefs();
+            }
+            return undefined;
+        }
+
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') togglePause();
+            if (e.key === 'F3') {
+                e.preventDefault();
+                sceneDebugPanel.toggle(getDebugSource());
+            }
         });
 
         // --- Procedural Logic ---

@@ -19,7 +19,7 @@ export function createVehiclePreviewScene(
     key.shadow.camera.top = 8;
     key.shadow.camera.bottom = -8;
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xff8a1f, 2.2);
+    const rim = new THREE.DirectionalLight(0xffffff, 2.2);
     rim.position.set(-5, 3.2, -4.8);
     scene.add(rim);
     const soft = new THREE.PointLight(0xffffff, 1.4, 12);
@@ -37,7 +37,7 @@ export function createVehiclePreviewScene(
     scene.add(reflection);
     const edge = new THREE.Mesh(
         new THREE.TorusGeometry(6.8, 0.018, 12, 160),
-        new THREE.MeshBasicMaterial({ color: 0xff8a1f, transparent: true, opacity: 0.28 })
+        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 })
     );
     edge.rotation.x = Math.PI / 2;
     edge.position.y = 0.018;

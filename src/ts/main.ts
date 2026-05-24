@@ -957,3 +957,4 @@ export class World
 export { SimpleCar } from './vehicles/SimpleCar';
 export * as AppStorage from './core/AppStorage';
 export { MainMenuController } from './ui/menu/MainMenuController';
+export { SceneDebugPanel } from './ui/SceneDebugPanel';

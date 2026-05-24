@@ -37,7 +37,7 @@ export class MainMenuController {
     private static readonly VEHICLE_SCRAMBLE_MIN_MS = 420;
     private readonly root: HTMLElement;
     private readonly getTheme: () => 'dark' | 'light';
-    private readonly preview: VehiclePreview;
+    public readonly preview: VehiclePreview;
     private readonly modeList: HTMLElement;
     private readonly vehicleName: HTMLElement;
     private readonly statList: HTMLElement;
@@ -167,13 +167,13 @@ export class MainMenuController {
         const vehicle = this.getVehicle();
         const comparisonVehicle = direction === 0 ? null : this.previousVehicle;
         this.vehicleName.textContent = vehicle.name;
-        renderVehicleStats(this.statList, vehicle, comparisonVehicle);
+        const shouldAnimateBars = direction !== 0 && this.previousVehicle !== null;
+        renderVehicleStats(this.statList, vehicle, comparisonVehicle, shouldAnimateBars);
         if (this.renderedVehicleId !== vehicle.id || direction !== 0) {
             this.renderedVehicleId = vehicle.id;
-            const shouldScramble = direction !== 0 && this.previousVehicle !== null;
+            const shouldAnimateSwap = direction !== 0 && this.previousVehicle !== null;
             const renderToken = ++this.vehicleRenderToken;
-            if (shouldScramble) this.setVehicleTransitionLocked(true);
-            if (shouldScramble) this.startVehicleTextScramble();
+            if (shouldAnimateSwap) this.setVehicleTransitionLocked(true);
             void this.preview.setVehicle(vehicle, direction).then((state) => {
                 if (renderToken !== this.vehicleRenderToken || state === 'stale') return;
                 this.stopVehicleTextScramble();
