@@ -50,7 +50,7 @@ export class VehiclePreview {
     private shadowCatcher!: THREE.Mesh;
     private readonly loader = new GLTFLoader();
     private readonly modelCache: { [path: string]: Promise<CachedVehicleModel> } = {};
-    private static readonly SWAP_DURATION_MS = 520;
+    private static readonly SWAP_DURATION_MS = 400;
     private readonly screenRight = new THREE.Vector3();
     private readonly tempAbsRight = new THREE.Vector3();
     private readonly tempBox = new THREE.Box3();
