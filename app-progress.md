@@ -1,3 +1,36 @@
+# SPRINT post-react-residues-cleanup — Nettoyage résidus post-migration React
+
+# Date : 2026-05-24
+
+# Statut : termine
+
+# Composants :
+- `webpack.common.js` (supprimé)
+- `webpack.dev.js` (supprimé)
+- `webpack.prod.js` (supprimé)
+- `index.html.bak` (supprimé)
+- `index.html.minimal` (supprimé)
+- `react-modernization-2086f1.md` (supprimé)
+- `build/simple_car.min.js` (supprimé)
+- `build/simple_car.min.js.map` (supprimé)
+- `src/ts/main.ts`
+- `src/ts/ui/SceneDebugPanel.ts`
+
+# Validation :
+- Suppression des 3 configs Webpack (common/dev/prod) obsolètes depuis la migration Vite.
+- Suppression du bundle UMD compilé `build/simple_car.min.js` et sa sourcemap.
+- Suppression des backups HTML pré-React (`index.html.bak`, `index.html.minimal`) qui référençaient encore `SimpleCar.World` via script inline.
+- Suppression du fichier plan `react-modernization-2086f1.md` (migration exécutée).
+- Retrait des 3 re-exports UMD de bas de `main.ts` (`SimpleCar`, `AppStorage`, `SceneDebugPanel`) — contrat Webpack mort, React importe directement ces modules par chemin.
+- Retrait des 2 blocs `document.getElementById('pause-overlay')` dans `World.togglePause()` et `World.dispose()` — état pause géré exclusivement par React via le callback `onPauseChange`.
+- Correction du commentaire `@ts-ignore` dans `SceneDebugPanel.ts` (`Webpack 4` → `CJS/UMD without ESM types`).
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille du chunk `three`.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Aucun risque runtime identifié : `World` communique le state pause exclusivement via `onPauseChange` callback, ce qui est le contrat React établi depuis la migration.
+
 # SPRINT menu-legacy-deadcode-cleanup — Nettoyage ancien menu DOM
 
 # Date : 2026-05-24

@@ -28,6 +28,7 @@ export class World
 	public sky: Sky;
 	public dayNight: DayNightCycle;
 	// Track
+	public ground?: THREE.Mesh;
 	public track?: THREE.Object3D;
 	private currentLevelId: string = 'default';
 	private proceduralTrackData?: TrackData;
@@ -249,6 +250,7 @@ export class World
 		ground.rotation.x = -Math.PI / 2;
 		ground.receiveShadow = true;
 		this.scene.add(ground);
+		this.ground = ground;
 	}
 
 	private setupPhysics(): void
@@ -866,19 +868,6 @@ export class World
 		if (this.isPaused && this.car && typeof (this.car as any).releaseAllActions === 'function') (this.car as any).releaseAllActions();
 		if (this.onPauseChange) this.onPauseChange(this.isPaused);
 
-		const pauseOverlay = document.getElementById('pause-overlay');
-		if (pauseOverlay)
-		{
-			if (this.isPaused)
-			{
-				pauseOverlay.classList.add('visible');
-			}
-			else
-			{
-				pauseOverlay.classList.remove('visible');
-			}
-		}
-
 		// Libère le pointer lock pour pouvoir utiliser la souris dans le menu de pause
 		if (this.isPaused && document.pointerLockElement === this.renderer.domElement && document.exitPointerLock)
 		{
@@ -910,12 +899,6 @@ export class World
 		document.removeEventListener('mouseup', this.handleMouseUp);
 		document.removeEventListener('mousemove', this.handleMouseMove);
 		window.removeEventListener('resize', this.handleResize);
-
-		const pauseOverlay = document.getElementById('pause-overlay');
-		if (pauseOverlay)
-		{
-			pauseOverlay.classList.remove('visible');
-		}
 
 		if (this.renderer && this.renderer.domElement && this.renderer.domElement.parentElement)
 		{
@@ -989,7 +972,3 @@ export class World
 	}
 }
 
-// Export for external use
-export { SimpleCar } from './vehicles/SimpleCar';
-export * as AppStorage from './core/AppStorage';
-export { SceneDebugPanel } from './ui/SceneDebugPanel';

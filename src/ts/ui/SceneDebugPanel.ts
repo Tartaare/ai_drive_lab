@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-// @ts-ignore — lil-gui ships UMD, Webpack 4 resolves it fine
+// @ts-ignore — lil-gui ships CJS/UMD without ESM types
 import GUI from 'lil-gui';
 
 export interface SceneDebugSource
@@ -8,6 +8,7 @@ export interface SceneDebugSource
 	renderer: THREE.WebGLRenderer;
 	camera: THREE.PerspectiveCamera;
 	scene: THREE.Scene;
+	ground?: THREE.Mesh;
 	sky?: {
 		sunLight: THREE.DirectionalLight;
 		sunPosition: THREE.Vector3;
@@ -86,6 +87,7 @@ export class SceneDebugPanel
 		if (s.dayNight) this.buildDayNightFolder(s);
 		this.buildFogFolder(s);
 		this.buildShadowFolder(s);
+		if (s.ground) this.buildFloorFolder(s.ground);
 	}
 
 	/* ── Renderer ─────────────────────────────── */
@@ -227,6 +229,32 @@ export class SceneDebugPanel
 			cam.top = v;
 			cam.bottom = -v;
 			cam.updateProjectionMatrix();
+		});
+		f.close();
+	}
+
+	/* ── Floor ───────────────────────────────── */
+	private buildFloorFolder(ground: THREE.Mesh): void
+	{
+		const mat = ground.material as THREE.MeshStandardMaterial;
+		if (!mat || !(mat as any).isMeshStandardMaterial) return;
+		const f = this.gui!.addFolder('Sol');
+		f.add(ground, 'visible').name('Visible');
+		f.add(mat, 'roughness', 0, 1, 0.01).name('Rugosité');
+		f.add(mat, 'metalness', 0, 1, 0.01).name('Métal');
+		f.add(mat, 'opacity', 0, 1, 0.01).name('Opacité').onChange((v: number) =>
+		{
+			mat.transparent = v < 1;
+			mat.needsUpdate = true;
+		});
+		f.addColor({ color: '#' + mat.color.getHexString() }, 'color').name('Couleur').onChange((v: string) =>
+		{
+			mat.color.set(v);
+		});
+		const posProxy = { y: ground.position.y };
+		f.add(posProxy, 'y', -5, 5, 0.01).name('Position Y').onChange((v: number) =>
+		{
+			ground.position.y = v;
 		});
 		f.close();
 	}
