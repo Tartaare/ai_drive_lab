@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon';
+import * as CANNON from 'cannon-es';
 import { Wheel } from './Wheel';
 import { KeyBinding } from '../core/KeyBinding';
 import { SpringSimulator } from '../physics/spring_simulation/SpringSimulator';
@@ -193,8 +193,7 @@ export class SimpleCar extends THREE.Object3D {
 		this.lastSurfaceByWheel = new Array(this.rayCastVehicle.wheelInfos.length);
 		this.lastFrictionSlipByWheel = new Array(this.rayCastVehicle.wheelInfos.length);
 
-		// Set up physics preStep callback
-		this.collision.preStep = (body: CANNON.Body) => { this.physicsPreStep(body); };
+		// physicsPreStep is called explicitly from the main animation loop before world.step()
 
 		// Actions / Controls
 		this.actions = {

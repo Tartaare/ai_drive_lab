@@ -19,8 +19,6 @@
         "noEmit": true,
         "rootDir": ".",
         "skipLibCheck": true,
-        "paths": {
-            "cannon" : ["./src/lib/cannon/cannon"]
-        }
+        "paths": {}
     }
 }
