@@ -1,12 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { X } from './icons/X';
+import { VehicleDefinition } from '../../ui/menu/catalog';
 
 interface VehicleSettingsViewProps {
     active: boolean;
+    vehicle: VehicleDefinition;
+    transitionLocked: boolean;
+    onVehicleChange: (direction: -1 | 1) => void;
     onClose: () => void;
 }
 
-export function VehicleSettingsView({ active, onClose }: VehicleSettingsViewProps): JSX.Element {
+export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose }: VehicleSettingsViewProps): JSX.Element {
     const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
     useEffect(() => {
@@ -33,6 +37,16 @@ export function VehicleSettingsView({ active, onClose }: VehicleSettingsViewProp
                 <h2 id="vehicle-settings-circuit-title">Circuit</h2>
                 <div className="vehicle-settings-panel__body" aria-hidden="true" />
             </section>
+            <div className="vehicle-settings-mini-selector">
+                <div className="vehicle-info__glass">
+                    <div className="vehicle-selector">
+                        <button className="vehicle-nav" type="button" aria-label="Véhicule précédent" disabled={transitionLocked} aria-disabled={transitionLocked} tabIndex={active ? 0 : -1} onClick={() => onVehicleChange(-1)}>‹</button>
+                        <div className="vehicle-title"><h2>{vehicle.name}</h2></div>
+                        <div style={{ width: 42 }} />
+                        <button className="vehicle-nav" type="button" aria-label="Véhicule suivant" disabled={transitionLocked} aria-disabled={transitionLocked} tabIndex={active ? 0 : -1} onClick={() => onVehicleChange(1)}>›</button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

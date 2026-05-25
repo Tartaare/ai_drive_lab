@@ -234,3 +234,21 @@
 .vehicle-settings-close:active {
     transform: scale(0.94);
 }
+
+.vehicle-settings-mini-selector {
+    grid-column: 2;
+    align-self: end;
+    padding-bottom: 0.5rem;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition:
+        opacity 0.52s var(--ease-smooth) 0.08s,
+        transform 0.52s var(--ease-smooth) 0.08s;
+}
+
+.vehicle-settings-view.is-active .vehicle-settings-mini-selector {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}

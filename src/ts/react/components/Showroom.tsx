@@ -8,7 +8,7 @@ import { AnimatedNumber } from './AnimatedNumber';
 import { AnimatedStatBar } from './AnimatedStatBar';
 import { ShowroomVehicleHandle } from './ShowroomVehicleCanvas';
 import { VehicleSettingsView } from './VehicleSettingsView';
-import { Wrench } from './icons/Wrench';
+import { Wrench } from 'lucide-react';
 
 interface ShowroomProps {
     theme: ThemeName;
@@ -92,7 +92,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                         {track && track.id === 'procedural' ? <><TrackMiniature config={props.proceduralConfig} seed={props.proceduralSeed} difficulty={props.proceduralDifficulty} /><div className="track-panel__body"><span className="track-panel__label">{track.label}</span><strong>{proceduralLength} m</strong><span>Difficulté {props.proceduralDifficulty.toUpperCase()}</span><span>Seed {props.proceduralSeed}</span></div><button className="track-new-btn" type="button" tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onNewTrack}>New Track</button></> : <><div className="track-miniature track-miniature--empty">GP</div><div className="track-panel__body"><span className="track-panel__label">{track ? track.label : 'No track'}</span><strong>Indisponible</strong><span>{track ? track.unavailableReason || 'Asset absent' : 'Mode indisponible'}</span></div></>}
                     </div>
                 </section>
-                <VehicleSettingsView active={vehicleSettingsOpen} onClose={() => setVehicleSettingsOpen(false)} />
+                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => setVehicleSettingsOpen(false)} />
             </div>
         </div>
     );
