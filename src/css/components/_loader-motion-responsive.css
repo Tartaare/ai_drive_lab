@@ -133,8 +133,17 @@
         padding: 12.75rem 0 6rem;
         pointer-events: auto;
     }
+    .vehicle-settings-view {
+        position: relative;
+        inset: auto;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0;
+        order: 2;
+    }
     .showroom-modes,
-    .showroom-track {
+    .showroom-track,
+    .vehicle-settings-panel {
         padding: 1rem;
     }
     .showroom-modes {
@@ -147,6 +156,21 @@
     }
     .showroom-track {
         order: 3;
+    }
+    .vehicle-settings-panel--drive,
+    .vehicle-settings-panel--circuit {
+        grid-column: 1;
+    }
+    .vehicle-settings-panel {
+        min-height: 260px;
+    }
+    .showroom-shell.is-configuring-vehicle {
+        padding-top: 11.75rem;
+    }
+    .showroom-shell.is-configuring-vehicle .showroom-modes,
+    .showroom-shell.is-configuring-vehicle .showroom-track {
+        position: absolute;
+        width: 100%;
     }
     .showroom-mode-list {
         grid-template-columns: 1fr;
@@ -165,13 +189,17 @@
         width: calc(100vw - 2rem);
     }
     .vehicle-selector {
-        grid-template-columns: 40px minmax(0, 1fr) 40px;
+        grid-template-columns: 40px minmax(0, 1fr) 40px 40px;
         gap: 0.65rem;
     }
     .vehicle-nav {
         width: 40px;
         height: 44px;
         font-size: 2.6rem;
+    }
+    .vehicle-settings-trigger {
+        width: 40px;
+        height: 40px;
     }
     .vehicle-info__glass h2 {
         font-size: clamp(1.3rem, 8vw, 2rem);
@@ -214,6 +242,10 @@
     .theme-toggle__icon,
     .showroom-mode,
     .vehicle-nav,
+    .vehicle-settings-trigger,
+    .vehicle-settings-close,
+    .vehicle-settings-panel,
+    .vehicle-settings-view,
     .track-new-btn,
     .cyber-btn {
         transition: none;
@@ -224,6 +256,7 @@
     .showroom-brand,
     .showroom-modes,
     .showroom-track,
+    .vehicle-settings-panel,
     .showroom-vehicle,
     .vehicle-info,
     .vehicle-stat,
@@ -236,6 +269,7 @@
     .showroom-brand,
     .showroom-modes,
     .showroom-track,
+    .vehicle-settings-panel,
     .showroom-vehicle,
     .vehicle-info,
     .vehicle-stat,

@@ -1,19 +1,39 @@
 ### NOTES ###
 
+
 Nouvelle branche pour cette mission (respecte les règles).
 
-Dans le menu principal Showroom:
+Dans le menu VehicleSettingsView, on va s'occuper des menus:
 
-- On va ajouter un bouton pour acceder aux réglages du véhicule:
-  1. Dans les infos du véhicule à droite du nom, ajoute un bouton icone "wrench" (https://lucide.dev/icons/wrench) qui ouvrira l'interface de réglages du véhicule.
-  2. L'interface de réglages du véhicule doit être dans la même page que l'interface de sélection du véhicule. On masquera tous les menus de l'interface showroom avec une animation fluide et moderne, et on affichera l'interface de réglages du véhicule (pour l'instant ce sera des menus identiques à Drive mode et Circuit mais vides, on verra le contenu plus tard). On conserve la scene 3D avec le vehicule sélectionné au centre.
+1. Le menu de droite doit servir à importer des modeles 3D de véhicules (glb, gltf, etc.) que le joueur pourra utiliser dans le jeu.
+- Il faut que le joueur puisse soit drag and drop, soit cliquer sur un bouton pour importer un fichier.
+- Le vehicule importé doit être affiché dans la scene 3D. Penser à la gestion des erreurs (fichier non compatible, etc.) et l'UI que ça implique.
+- Il faut pouvoir enregistrer le véhicule importé dans la base de données.
+- Il faut pouvoir supprimer un véhicule importé.
 
 
+2. Le menu de gauche doit servir à gérer la détection des éléments du véhicule.
+Dans notre app pour chaque véhicule on détecte déjà les parties du véhicule dont on a besoin avec "VehicleSetup.prepareModel(gltf.scene)". Dans ce menu on affichera donc la liste des éléments recherchés et pour chacun on mettra à coté l'élément détecté correspondant dans un bouton avec une liste déroulante. Ainsi si l'élément détecté ne correspond pas à celui recherché, le joueur pourra choisir l'élément qui correspond.
+Pour une bonne UX, il faut que l'utilisateur
 
 
 
 ===================== DONE =====================
 # commit / push / merge / ect. on veut un repo propre et à jour.
+
+
+On a installé lucide-react.
+Dans le menu showroom:
+1. Utilise une icone lucide pour le Wrench.
+Dans le menu VehicleSettingsView:
+1. En bas on peut garder affiché le menu vehicule info mais sans les stats, Juste le nom et les fleches pour changer de vehicule.
+
+principal Showroom:
+
+- On va ajouter un bouton pour acceder aux réglages du véhicule:
+  1. Dans les infos du véhicule à droite du nom, ajoute un bouton icone "wrench" (https://lucide.dev/icons/wrench) qui ouvrira l'interface de réglages du véhicule.
+  2. L'interface de réglages du véhicule doit être dans la même page que l'interface de sélection du véhicule. On masquera tous les menus de l'interface showroom avec une animation fluide et moderne, et on affichera l'interface de réglages du véhicule (pour l'instant ce sera des menus identiques à Drive mode et Circuit mais vides, on verra le contenu plus tard). On conserve la scene 3D avec le vehicule sélectionné au centre.
+
 
 
 Dans menu principal > vehicule info:

@@ -1,3 +1,35 @@
+# SPRINT showroom-vehicle-settings-entry — Sous-vue réglages véhicule Showroom
+
+# Date : 2026-05-25
+
+# Statut : termine
+
+# Composants :
+- `src/ts/react/components/Showroom.tsx`
+- `src/ts/react/components/VehicleSettingsView.tsx`
+- `src/ts/react/components/icons/Wrench.tsx`
+- `src/ts/react/components/icons/X.tsx`
+- `src/css/showroom/_shell.css`
+- `src/css/showroom/_vehicle.css`
+- `src/css/components/_controls.css`
+- `src/css/components/_loader-motion-responsive.css`
+- `README.md`
+
+# Validation :
+- Ajout d'un bouton icone wrench accessible a droite du nom vehicule dans le Showroom.
+- Ajout d'une sous-vue `VehicleSettingsView` dans le meme overlay, sans demonter `VehiclePreviewStage` ni modifier le canvas 3D.
+- Les panneaux Drive mode, Circuit, stats vehicule et CTA Start Engine se masquent pendant les reglages via transitions opacity/transform et perdent leur interaction clavier.
+- Correction de contrat : l'ouverture des reglages masque aussi marque, theme toggle, infos vehicule, navigation vehicule et tout panneau Showroom via `visibility` + `aria-hidden`, en conservant uniquement la scene 3D et `VehicleSettingsView`.
+- Le focus clavier est deplace sur la fermeture des reglages et `Escape` ferme la sous-vue.
+- La sous-vue reglages affiche deux panneaux vides, alignes sur l'identite cockpit motorsport existante, avec fermeture accessible.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille des chunks `three` / application.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Risque faible : `lucide-react` n'a pas ete ajoute car npm echoue sur `UNABLE_TO_VERIFY_LEAF_SIGNATURE`; les icones wrench/close sont implementees localement en SVG compatibles Lucide.
+- Une verification visuelle navigateur desktop/mobile reste recommandee pour confirmer le ressenti exact des transitions et la manipulation du vehicule en mode reglages.
+
 # SPRINT post-react-residues-cleanup — Nettoyage résidus post-migration React
 
 # Date : 2026-05-24
