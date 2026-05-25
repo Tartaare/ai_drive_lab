@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon';
+import * as CANNON from 'cannon-es';
 import { SimpleCar, SurfaceType } from './vehicles/SimpleCar';
 import { VehicleSetup } from './vehicles/VehicleSetup';
 import { Sky } from './world/Sky';
@@ -453,7 +453,7 @@ export class World
 		}
 
 		for (const body of this.proceduralKerbBodies) {
-			this.physicsWorld.remove(body);
+			this.physicsWorld.removeBody(body);
 		}
 		this.proceduralKerbBodies = [];
 	}
@@ -950,7 +950,8 @@ export class World
 
 		if (!this.isPaused)
 		{
-			// Physics update
+			// Physics update — preStep must be called manually (cannon-es removed Body.preStep)
+			if (this.car) this.car.physicsPreStep(this.car.collision);
 			this.physicsWorld.step(this.physicsFrameTime, timeStep, 10);
 
 			// Update car

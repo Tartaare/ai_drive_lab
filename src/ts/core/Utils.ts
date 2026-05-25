@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon';
+import * as CANNON from 'cannon-es';
 
 export function threeVector(vec: CANNON.Vec3): THREE.Vector3
 {

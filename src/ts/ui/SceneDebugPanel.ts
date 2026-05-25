@@ -18,7 +18,7 @@ export interface SceneDebugSource
 	ground?: THREE.Mesh;
 	shadowPlane?: THREE.Mesh;
 	softShadows?: SoftShadowsSource;
-	environmentPreset?: { current: string; onChange(preset: string): void };
+	environmentPreset?: { current: string; onChange(preset: string): void; onToggle(enabled: boolean): void };
 	sky?: {
 		sunLight: THREE.DirectionalLight;
 		sunPosition: THREE.Vector3;
@@ -336,11 +336,15 @@ export class SceneDebugPanel
 	}
 
 	/* ── Environment ─────────────────────────── */
-	private buildEnvironmentFolder(env: { current: string; onChange(preset: string): void }): void
+	private buildEnvironmentFolder(env: { current: string; onChange(preset: string): void; onToggle(enabled: boolean): void }): void
 	{
 		const PRESETS = ['apartment', 'city', 'dawn', 'forest', 'lobby', 'night', 'park', 'studio', 'sunset', 'warehouse'];
 		const f = this.gui!.addFolder('Environment');
-		const proxy = { preset: env.current };
+		const proxy = { enabled: true, preset: env.current };
+		f.add(proxy, 'enabled').name('On/Off').onChange((v: boolean) =>
+		{
+			env.onToggle(v);
+		});
 		f.add(proxy, 'preset', PRESETS).name('Preset').onChange((v: string) =>
 		{
 			env.onChange(v);

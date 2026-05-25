@@ -2,21 +2,18 @@
 
 Nouvelle branche pour cette mission (respecte les règles).
 
-Dans menu principal > Showroom vehicule:
+Dans le menu principal Showroom:
 
-Vu qu'on dispose maintenant de R3F et Drei on va pouvoir moderniser le design de notre app. D'abord le menu principal:
-
-Dans cet exemple on ne distingue pas le sol du reste un peu comme dans un studio photo. j'aimerai le même effet dans notre showroom (en conservant les reflets au sol chez nous)
-
-https://github.com/pmndrs/examples/tree/main/demos/baking-soft-shadows
-
+- On va ajouter un bouton pour acceder aux réglages du véhicule:
+  1. Dans les infos du véhicule à droite du nom, ajoute un bouton icone "wrench" (https://lucide.dev/icons/wrench) qui ouvrira l'interface de réglages du véhicule.
+  2. L'interface de réglages du véhicule doit être dans la même page que l'interface de sélection du véhicule. On masquera tous les menus de l'interface showroom avec une animation fluide et moderne, et on affichera l'interface de réglages du véhicule (pour l'instant ce sera des menus identiques à Drive mode et Circuit mais vides, on verra le contenu plus tard). On conserve la scene 3D avec le vehicule sélectionné au centre.
 
 
 
 
 
 ===================== DONE =====================
-
+# commit / push / merge / ect. on veut un repo propre et à jour.
 
 
 Dans menu principal > vehicule info:

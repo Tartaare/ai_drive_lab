@@ -66,9 +66,10 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         }, []);
         const envPresetRef = useRef('city');
         const setEnvPresetRef = useRef<((preset: string) => void) | null>(null);
+        const setEnvEnabledRef = useRef<((enabled: boolean) => void) | null>(null);
         const debugOrbitRef = useRef(false);
         const rotationYRef = useRef(0);
-        const cameraDistanceRef = useRef(1.4);
+        const cameraDistanceRef = useRef(1);
         const cameraAzimuthRef = useRef(0);
         const cameraElevationRef = useRef(16);
         const cameraHeightRef = useRef(-0.74);
@@ -76,9 +77,9 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
 
         // Showroom camera configuration (normal mode - non-debug)
         const showroomCameraRef = useRef({
-            radius: 23,        // Distance sphérique de la caméra au point cible
-            elevation: 20,     // Angle vertical en degrés (0 = horizon, 90 = zénith)
-            lookAtY: 0,        // Target Y position (where camera looks)
+            radius: 20,        // Distance sphérique de la caméra au point cible
+            elevation: 16,     // Angle vertical en degrés (0 = horizon, 90 = zénith)
+            lookAtY: 0.1,        // Target Y position (where camera looks)
             fov: 15            // Field of view
         });
         const reduceMotion = useReducedMotion();
@@ -92,7 +93,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
             const wheelHandler = (event: WheelEvent): void => {
                 event.preventDefault();
                 const direction = event.deltaY > 0 ? 1 : -1;
-                cameraDistanceRef.current = THREE.MathUtils.clamp(cameraDistanceRef.current + direction * 0.1, 0.86, 2.05);
+                cameraDistanceRef.current = THREE.MathUtils.clamp(cameraDistanceRef.current + direction * 0.13, 0.85, 1.2);
             };
             
             container.addEventListener('wheel', wheelHandler, { passive: false });
@@ -113,6 +114,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     environmentPreset: {
                         get current() { return envPresetRef.current; },
                         onChange: (preset: string) => { setEnvPresetRef.current?.(preset); },
+                        onToggle: (enabled: boolean) => { setEnvEnabledRef.current?.(enabled); },
                     },
                     get cameraAzimuth() { return cameraAzimuthRef.current; },
                     set cameraAzimuth(value: number) { cameraAzimuthRef.current = value; },
@@ -248,7 +250,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                         sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera, floorMesh: null, shadowPlane: null, softShadows: softShadowsRef.current };
                     }}
                 >
-                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef} showroomCameraRef={showroomCameraRef} floorMeshRef={floorMeshRef} envPresetRef={envPresetRef} setEnvPresetRef={setEnvPresetRef} onShadowPlaneReady={handleShadowPlaneReady} onSoftShadowsReady={handleSoftShadowsReady}>
+                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef} showroomCameraRef={showroomCameraRef} floorMeshRef={floorMeshRef} envPresetRef={envPresetRef} setEnvPresetRef={setEnvPresetRef} setEnvEnabledRef={setEnvEnabledRef} onShadowPlaneReady={handleShadowPlaneReady} onSoftShadowsReady={handleSoftShadowsReady}>
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
@@ -263,7 +265,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
     }
 );
 
-function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef, showroomCameraRef, floorMeshRef, envPresetRef, setEnvPresetRef, onShadowPlaneReady, onSoftShadowsReady }: {
+function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef, showroomCameraRef, floorMeshRef, envPresetRef, setEnvPresetRef, setEnvEnabledRef, onShadowPlaneReady, onSoftShadowsReady }: {
     children: ReactNode;
     theme: ThemeName;
     debugOrbitRef: MutableRefObject<boolean>;
@@ -276,6 +278,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
     floorMeshRef: MutableRefObject<THREE.Mesh | null>;
     envPresetRef: MutableRefObject<string>;
     setEnvPresetRef: MutableRefObject<((preset: string) => void) | null>;
+    setEnvEnabledRef: MutableRefObject<((enabled: boolean) => void) | null>;
     onShadowPlaneReady: (mesh: THREE.Mesh | null) => void;
     onSoftShadowsReady: (ss: SoftShadowsSource) => void;
 }): JSX.Element {
@@ -284,8 +287,10 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
     const floor = theme === 'light' ? FLOOR_LIGHT : FLOOR_DARK;
     const isLight = theme === 'light';
     const [envPreset, setEnvPreset] = useState(envPresetRef.current);
+    const [envEnabled, setEnvEnabled] = useState(true);
     envPresetRef.current = envPreset;
     setEnvPresetRef.current = setEnvPreset;
+    setEnvEnabledRef.current = setEnvEnabled;
     useEffect(() => {
         onSoftShadowsReady({
             get opacity() { return 1; },
@@ -314,8 +319,9 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
         // Normal showroom mode - use configurable camera settings
         const cam = showroomCameraRef.current;
         const elRad = THREE.MathUtils.degToRad(cam.elevation);
-        const horiz = cam.radius * Math.cos(elRad);
-        const vert = cam.radius * Math.sin(elRad);
+        const dist = cam.radius * cameraDistanceRef.current;
+        const horiz = dist * Math.cos(elRad);
+        const vert = dist * Math.sin(elRad);
         perspectiveCamera.position.set(0, vert, horiz);
         perspectiveCamera.lookAt(0, cam.lookAtY, 0);
     });
@@ -324,7 +330,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
         <>
             <color attach="background" args={[bg]} />
             <fog attach="fog" args={[bg, 22, 32]} />
-            <Environment preset={envPreset as any} />
+            {envEnabled && <Environment preset={envPreset as any} />}
             <StudioLighting />
             <StudioBox />
             {children}
@@ -553,7 +559,11 @@ function createNormalizedVehicle(source: THREE.Object3D): THREE.Group {
     const heightScale = 1.25 / height;
     const scale = THREE.MathUtils.clamp(footprintScale * 0.82 + heightScale * 0.18, 0.2, 6);
     cloned.scale.setScalar(scale);
-    cloned.position.set(-center.x * scale, -box.min.y * scale - 0.02, -center.z * scale);
+    // Recalcul de la AABB après scale pour centrage XZ et snap-to-floor précis
+    const scaledBox = new THREE.Box3().setFromObject(cloned);
+    const scaledCenter = new THREE.Vector3();
+    scaledBox.getCenter(scaledCenter);
+    cloned.position.set(-scaledCenter.x, -scaledBox.min.y, -scaledCenter.z);
     cloned.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh) return;
