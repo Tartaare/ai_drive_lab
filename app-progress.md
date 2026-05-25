@@ -19,6 +19,8 @@
 - Ajout d'un bouton icone wrench accessible a droite du nom vehicule dans le Showroom.
 - Ajout d'une sous-vue `VehicleSettingsView` dans le meme overlay, sans demonter `VehiclePreviewStage` ni modifier le canvas 3D.
 - Les panneaux Drive mode, Circuit, stats vehicule et CTA Start Engine se masquent pendant les reglages via transitions opacity/transform et perdent leur interaction clavier.
+- Correction de contrat : l'ouverture des reglages masque aussi marque, theme toggle, infos vehicule, navigation vehicule et tout panneau Showroom via `visibility` + `aria-hidden`, en conservant uniquement la scene 3D et `VehicleSettingsView`.
+- Le focus clavier est deplace sur la fermeture des reglages et `Escape` ferme la sous-vue.
 - La sous-vue reglages affiche deux panneaux vides, alignes sur l'identite cockpit motorsport existante, avec fermeture accessible.
 - `npx tsc --noEmit` : succes.
 - `npm run build` : succes, avec warning Vite existant de taille des chunks `three` / application.

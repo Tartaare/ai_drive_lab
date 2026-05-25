@@ -86,7 +86,11 @@
     pointer-events: auto;
     gap: 1rem;
     animation: vehicleInfoIn 0.72s var(--ease-smooth) 0.28s both;
-    transition: transform 0.45s var(--ease-smooth);
+    transition:
+        opacity 0.36s var(--ease-smooth),
+        transform 0.45s var(--ease-smooth),
+        filter 0.36s var(--ease-smooth),
+        visibility 0s linear 0.45s;
 }
 
 .vehicle-info__glass {
@@ -207,6 +211,10 @@
 }
 
 .showroom-shell.is-configuring-vehicle .vehicle-info {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    filter: blur(8px);
     transform: translate(-50%, 12px);
 }
 

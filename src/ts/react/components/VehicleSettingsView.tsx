@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { X } from './icons/X';
 
 interface VehicleSettingsViewProps {
@@ -6,13 +7,22 @@ interface VehicleSettingsViewProps {
 }
 
 export function VehicleSettingsView({ active, onClose }: VehicleSettingsViewProps): JSX.Element {
+    const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+    useEffect(() => {
+        if (!active) return;
+        closeButtonRef.current?.focus();
+    }, [active]);
+
     return (
-        <div className={`vehicle-settings-view${active ? ' is-active' : ''}`} aria-hidden={!active}>
+        <div className={`vehicle-settings-view${active ? ' is-active' : ''}`} aria-hidden={!active} onKeyDown={(event) => {
+            if (event.key === 'Escape') onClose();
+        }}>
             <section className="vehicle-settings-panel vehicle-settings-panel--drive" aria-labelledby="vehicle-settings-drive-title">
                 <span className="showroom-kicker">Vehicle setup</span>
                 <div className="vehicle-settings-panel__header">
                     <h2 id="vehicle-settings-drive-title">Drive mode</h2>
-                    <button className="vehicle-settings-close" type="button" aria-label="Fermer les réglages du véhicule" tabIndex={active ? 0 : -1} onClick={onClose}>
+                    <button ref={closeButtonRef} className="vehicle-settings-close" type="button" aria-label="Fermer les réglages du véhicule" tabIndex={active ? 0 : -1} onClick={onClose}>
                         <X size={18} strokeWidth={2} aria-hidden="true" />
                     </button>
                 </div>

@@ -39,6 +39,16 @@
     align-items: baseline;
     gap: 0.75rem;
     pointer-events: none;
+    transition: opacity 0.36s var(--ease-smooth), transform 0.36s var(--ease-smooth), filter 0.36s var(--ease-smooth), visibility 0s linear 0s;
+}
+
+.menu-overlay.is-vehicle-settings .showroom-brand,
+.menu-overlay.is-vehicle-settings .theme-toggle {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    filter: blur(8px);
+    transform: translateY(-12px);
 }
 
 .showroom-brand__mark {
@@ -86,7 +96,8 @@
     transition:
         opacity 0.45s var(--ease-smooth),
         transform 0.45s var(--ease-smooth),
-        filter 0.45s var(--ease-smooth);
+        filter 0.45s var(--ease-smooth),
+        visibility 0s linear 0.45s;
 }
 
 .showroom-modes {
@@ -106,6 +117,7 @@
 .showroom-shell.is-configuring-vehicle .showroom-modes,
 .showroom-shell.is-configuring-vehicle .showroom-track {
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
     filter: blur(8px);
 }
@@ -128,13 +140,16 @@
     gap: clamp(1rem, 3vw, 3rem);
     padding: 6.5rem 2rem 8.5rem;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.45s var(--ease-smooth);
+    transition: opacity 0.45s var(--ease-smooth), visibility 0s linear 0.45s;
 }
 
 .vehicle-settings-view.is-active {
     opacity: 1;
+    visibility: visible;
     pointer-events: none;
+    transition-delay: 0s;
 }
 
 .vehicle-settings-panel {

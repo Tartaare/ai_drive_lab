@@ -46,12 +46,12 @@ export function Showroom(props: ShowroomProps): JSX.Element {
     const isLight = props.theme === 'light';
 
     return (
-        <div id="main-menu" className="menu-overlay">
-            <div className="showroom-brand" aria-label="APEX Physics Driving Simulation">
+        <div id="main-menu" className={`menu-overlay${vehicleSettingsOpen ? ' is-vehicle-settings' : ''}`}>
+            <div className="showroom-brand" aria-label="APEX Physics Driving Simulation" aria-hidden={vehicleSettingsOpen}>
                 <span className="showroom-brand__mark">APEX</span>
                 <span className="showroom-brand__line">Physics Driving Simulation</span>
             </div>
-            <button id="theme-toggle" className="theme-toggle" type="button" aria-label={isLight ? 'Activer le thème sombre' : 'Activer le thème clair'} aria-pressed={isLight} onClick={props.onThemeToggle}>
+            <button id="theme-toggle" className="theme-toggle" type="button" aria-label={isLight ? 'Activer le thème sombre' : 'Activer le thème clair'} aria-pressed={isLight} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onThemeToggle}>
                 <span className="theme-toggle__track" aria-hidden="true"><span className="theme-toggle__orb"><span className="theme-toggle__icon theme-toggle__icon--sun">☀</span><span className="theme-toggle__icon theme-toggle__icon--moon">☾</span></span></span>
             </button>
             <select id="main-menu-level-select" hidden aria-hidden="true" tabIndex={-1} value={track ? track.levelId : 'procedural'} onChange={() => undefined}>
@@ -68,15 +68,15 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                 </section>
                 <section className="showroom-vehicle" aria-labelledby="showroom-vehicle-name">
                     <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
-                    <div className="vehicle-info">
+                    <div className="vehicle-info" aria-hidden={vehicleSettingsOpen}>
                         <div className="vehicle-info__glass">
                             <div className="vehicle-selector">
-                                <button id="vehicle-prev" className="vehicle-nav" type="button" aria-label="Véhicule précédent" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} onClick={() => props.onVehicleChange(-1)}>‹</button>
+                                <button id="vehicle-prev" className="vehicle-nav" type="button" aria-label="Véhicule précédent" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => props.onVehicleChange(-1)}>‹</button>
                                 <div className="vehicle-title"><h2 id="showroom-vehicle-name">{vehicle.name}</h2></div>
-                                <button className="vehicle-settings-trigger" type="button" aria-label="Ouvrir les réglages du véhicule" aria-pressed={vehicleSettingsOpen} onClick={() => setVehicleSettingsOpen(true)}>
+                                <button className="vehicle-settings-trigger" type="button" aria-label="Ouvrir les réglages du véhicule" aria-pressed={vehicleSettingsOpen} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => setVehicleSettingsOpen(true)}>
                                     <Wrench size={18} strokeWidth={2.1} aria-hidden="true" />
                                 </button>
-                                <button id="vehicle-next" className="vehicle-nav" type="button" aria-label="Véhicule suivant" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} onClick={() => props.onVehicleChange(1)}>›</button>
+                                <button id="vehicle-next" className="vehicle-nav" type="button" aria-label="Véhicule suivant" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => props.onVehicleChange(1)}>›</button>
                             </div>
                             <div id="showroom-vehicle-stats" className="vehicle-stats" aria-label="Caractéristiques véhicule" aria-hidden={vehicleSettingsOpen}>
                                 <VehicleStats vehicle={vehicle} previousVehicle={previousVehicle} />
