@@ -86,6 +86,7 @@
     pointer-events: auto;
     gap: 1rem;
     animation: vehicleInfoIn 0.72s var(--ease-smooth) 0.28s both;
+    transition: transform 0.45s var(--ease-smooth);
 }
 
 .vehicle-info__glass {
@@ -100,6 +101,7 @@
     display: grid;
     justify-items: center;
     gap: 0.35rem;
+    transition: padding 0.45s var(--ease-smooth), border-color 0.25s var(--ease-smooth);
 }
 
 .vehicle-info__glass .showroom-kicker {
@@ -119,7 +121,7 @@
 .vehicle-selector {
     width: min(610px, 100%);
     display: grid;
-    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    grid-template-columns: 34px minmax(0, 1fr) 42px 34px;
     align-items: center;
     gap: 0.75rem;
 }
@@ -127,6 +129,35 @@
 .vehicle-title {
     min-width: 0;
     text-align: center;
+}
+
+.vehicle-settings-trigger {
+    width: 42px;
+    height: 42px;
+    display: inline-grid;
+    place-items: center;
+    border: 1px solid var(--c-border-subtle);
+    background: rgba(255, 255, 255, 0.018);
+    color: var(--c-text);
+    cursor: pointer;
+    pointer-events: auto;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition:
+        transform 0.2s var(--ease-smooth),
+        border-color 0.25s var(--ease-smooth),
+        background 0.25s var(--ease-smooth),
+        color 0.25s var(--ease-smooth);
+}
+
+.vehicle-settings-trigger:hover,
+.vehicle-settings-trigger[aria-pressed="true"] {
+    border-color: var(--c-motorsport-soft);
+    background: var(--c-motorsport-dim);
+    color: var(--c-motorsport);
+}
+
+.vehicle-settings-trigger:active {
+    transform: scale(0.94);
 }
 
 
@@ -167,6 +198,38 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem 1rem;
     margin-top: 0.9rem;
+    transition:
+        opacity 0.36s var(--ease-smooth),
+        transform 0.36s var(--ease-smooth),
+        filter 0.36s var(--ease-smooth),
+        max-height 0.45s var(--ease-smooth),
+        margin-top 0.45s var(--ease-smooth);
+}
+
+.showroom-shell.is-configuring-vehicle .vehicle-info {
+    transform: translate(-50%, 12px);
+}
+
+.showroom-shell.is-configuring-vehicle .vehicle-info__glass {
+    border-color: var(--c-motorsport-soft);
+}
+
+.showroom-shell.is-configuring-vehicle .vehicle-stats,
+.showroom-shell.is-configuring-vehicle .showroom-start {
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(8px);
+}
+
+.showroom-shell.is-configuring-vehicle .vehicle-stats {
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    transform: translateY(10px);
+}
+
+.showroom-shell.is-configuring-vehicle .showroom-start {
+    transform: translateY(14px) scale(0.98);
 }
 
 .vehicle-stat {
