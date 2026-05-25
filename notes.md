@@ -19,7 +19,7 @@ Pour une bonne UX, il faut que l'utilisateur
 
 
 ===================== DONE =====================
-# commit / push / merge / ect. on veut un repo propre et à jour.
+# commit / merge / push / ect. on veut un repo propre et à jour.
 
 
 On a installé lucide-react.
