@@ -67,11 +67,12 @@ Le build optimise est genere dans `dist/`.
 │   │   ├── showroom/        # Shell, modes, vehicule, circuit
 │   │   └── components/      # Controles, HUD, settings, loader, favoris
 │   ├── ts/
-│   │   ├── main.ts          # API moteur World / Three.js / Cannon.js
+│   │   ├── main.ts          # Facade API moteur World / Three.js / Cannon.js
 │   │   ├── react/           # Shell React, showroom, HUD, settings
 │   │   ├── core/
 │   │   │   └── AppStorage.ts # Persistance IndexedDB (idb v8)
 │   │   ├── world/
+│   │   │   ├── worldCore/   # Modules internes World : bootstrap, input, piste, runtime
 │   │   │   ├── ProceduralTrack.ts      # Facade piste procedurale
 │   │   │   └── track/
 │   │   │       ├── trackTypes.ts       # Types et interfaces
@@ -81,7 +82,8 @@ Le build optimise est genere dans `dist/`.
 │   │   │       ├── trackCurvature.ts   # Analyse geometrique
 │   │   │       ├── trackKerbs.ts       # Bordures et vibreurs
 │   │   │       └── trackSpatial.ts     # Helpers spatiaux
-│   │   ├── vehicles/        # Vehicule, roues, modeles
+│   │   ├── vehicles/        # Facade SimpleCar, roues, modeles
+│   │   │   └── simpleCar/   # Modules internes SimpleCar : runtime, transmission, controles
 │   │   └── ui/              # Helpers UI partages
 │   │       ├── SceneDebugPanel.ts # Panneau debug F3
 │   │       └── menu/

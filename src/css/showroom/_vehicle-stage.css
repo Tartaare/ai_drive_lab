@@ -1,0 +1,75 @@
+.showroom-vehicle {
+    --showroom-start-gap: 2.4rem;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    min-width: 0;
+    pointer-events: none;
+    animation: showroomVehicleIn 0.9s var(--ease-smooth) 0.08s both;
+}
+
+.vehicle-stage {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    isolation: isolate;
+    pointer-events: auto;
+}
+
+.vehicle-stage::before {
+    display: none;
+}
+
+.vehicle-stage__canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+}
+
+.vehicle-stage__r3f {
+    position: absolute;
+    inset: 0;
+    outline: none;
+}
+
+.vehicle-stage__r3f:focus-visible {
+    outline: 1px solid var(--c-motorsport);
+    outline-offset: -6px;
+}
+
+.vehicle-stage__canvas:active {
+    cursor: grabbing;
+}
+
+.vehicle-stage__status {
+    position: absolute;
+    left: 50%;
+    bottom: 14.2rem;
+    transform: translateX(-50%);
+    min-height: 1rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--c-text-soft);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.vehicle-stage[data-state="loading"]::after,
+.vehicle-stage[data-state="error"]::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(42vw, 520px);
+    height: min(18vw, 190px);
+    transform: translate(-50%, -28%);
+    border: 1px solid var(--c-motorsport-dim);
+    background: linear-gradient(135deg, transparent 12%, rgba(255, 255, 255, 0.035), transparent 64%);
+    clip-path: polygon(8% 62%, 18% 34%, 38% 24%, 70% 28%, 84% 48%, 94% 58%, 86% 70%, 16% 70%);
+    filter: drop-shadow(0 0 38px var(--c-motorsport-dim));
+    opacity: 0.72;
+    pointer-events: none;
+}

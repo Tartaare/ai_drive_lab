@@ -9,9 +9,9 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { Showroom } from './components/Showroom';
 import { ShowroomVehicleHandle } from './components/ShowroomVehicleCanvas';
 import { getProceduralLength } from './components/TrackMiniature';
-import { AppPhase, MainMenuSelection, ProceduralParamKey, RuntimeCar, TelemetryState, ThemeName } from './types';
-
-const emptyTelemetry: TelemetryState = { speed: 0, gear: 'N', transmission: 'AUTO', rpm: 0, maxRpm: 8000 };
+import { emptyTelemetry, useDrivingTelemetry } from './hooks/useDrivingTelemetry';
+import { useSceneDebugHotkey } from './hooks/useSceneDebugHotkey';
+import { AppPhase, MainMenuSelection, ProceduralParamKey, TelemetryState, ThemeName } from './types';
 
 export function App(): JSX.Element {
     const [phase, setPhase] = useState<AppPhase>('loading');
@@ -130,43 +130,8 @@ export function App(): JSX.Element {
         };
     }, [applyTheme, loadFavorites]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'F3') return;
-            event.preventDefault();
-            const panel = debugPanelRef.current;
-            const wasVisible = panel.isVisible();
-            const world = worldRef.current;
-            if (world) {
-                panel.toggle(world);
-                return;
-            }
-            const preview = previewRef.current;
-            if (!preview) return;
-            panel.toggle(preview.getSceneRefs());
-            preview.setDebugOrbitMode(!wasVisible);
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
-    useEffect(() => {
-        if (phase !== 'driving') return;
-        const timer = window.setInterval(() => {
-            const car = (worldRef.current as unknown as { car?: RuntimeCar } | null)?.car;
-            if (!car) return;
-            const currentGear = car.currentGear || 0;
-            const gear = currentGear <= -1 ? 'R' : currentGear === 0 ? 'N' : String(currentGear);
-            setTelemetry({
-                speed: Math.abs(Math.round((car.speed || 0) * 3.6)),
-                gear,
-                transmission: car.isManualTransmission ? 'MAN' : 'AUTO',
-                rpm: car.currentRpm || 0,
-                maxRpm: car.redlineRpm || 8000
-            });
-        }, 50);
-        return () => window.clearInterval(timer);
-    }, [phase]);
+    useSceneDebugHotkey(debugPanelRef, worldRef, previewRef);
+    useDrivingTelemetry(phase, worldRef, setTelemetry);
 
     useEffect(() => () => {
         if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
