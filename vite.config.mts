@@ -4,6 +4,9 @@ import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
+    optimizeDeps: {
+        include: ['@react-three/fiber', '@react-three/drei', 'three']
+    },
     resolve: {
         dedupe: ['three', 'react', 'react-dom', '@react-three/fiber'],
         alias: {

@@ -1,7 +1,8 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, MeshReflectorMaterial, useGLTF } from '@react-three/drei';
+import { MeshReflectorMaterial, useGLTF } from '@react-three/drei';
 import { Component, forwardRef, MutableRefObject, ReactNode, Suspense, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { SceneDebugSource } from '../../ui/SceneDebugPanel';
 import { VehicleDefinition } from '../../ui/menu/catalog';
@@ -37,10 +38,10 @@ interface SceneRefs {
 }
 
 const FLOOR_DARK = '#151515';
-const FLOOR_LIGHT = '#d8d8dc';
 const BG_DARK = '#17171b';
 const BG_LIGHT = '#e8e8ea';
 const SWAP_DURATION_MS = 400;
+const STUDIO_PANEL_SIZE: [number, number] = [5.8, 2.1];
 
 export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomVehicleCanvasProps>(
     function ShowroomVehicleCanvas(props, ref): JSX.Element {
@@ -129,7 +130,11 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
 
         const finishIncoming = (vehicle: VehicleDefinition): void => {
             activeVehicleRef.current = vehicle;
-            setSlots([createSlot(vehicle, 'active', 0)]);
+            setSlots((prev) => {
+                const incoming = prev.find((s) => s.role === 'incoming' && s.vehicle.id === vehicle.id);
+                if (incoming) return [{ ...incoming, role: 'active', direction: 0 }];
+                return [createSlot(vehicle, 'active', 0)];
+            });
             props.onTransitionChange(false);
         };
 
@@ -224,7 +229,7 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
 }): JSX.Element {
     const { camera } = useThree();
     const bg = theme === 'light' ? BG_LIGHT : BG_DARK;
-    const floor = theme === 'light' ? FLOOR_LIGHT : FLOOR_DARK;
+    const floor = FLOOR_DARK;
 
     useFrame((_, delta) => {
         if (!debugOrbitRef.current && !document.pointerLockElement) rotationYRef.current += delta * 0.32;
@@ -247,27 +252,58 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
         <>
             <color attach="background" args={[bg]} />
             <fog attach="fog" args={[bg, 30, 40]} />
-            <ambientLight intensity={0.25} />
-            <directionalLight castShadow intensity={2} position={[10, 6, 6]} shadow-mapSize={[1024, 1024]}>
-                <orthographicCamera attach="shadow-camera" left={-20} right={20} top={20} bottom={-20} />
-            </directionalLight>
+            <StudioLighting />
+            <StudioBox />
             {children}
-            <mesh ref={(m) => { floorMeshRef.current = m; }} position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+            <mesh ref={(m) => { floorMeshRef.current = m; }} position={[0, 0.0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[50, 50]} />
                 <MeshReflectorMaterial
-                    blur={[400, 100]}
+                    blur={[360, 100]}
                     resolution={1024}
                     mixBlur={1}
-                    mixStrength={theme === 'light' ? 8 : 15}
+                    mixStrength={15}
                     depthScale={1}
                     minDepthThreshold={0.85}
-                    mirror={undefined as unknown as number}
+                    mirror={0}
                     color={floor}
                     metalness={0.6}
-                    roughness={1}
+                    roughness={0.86}
                 />
             </mesh>
-            <Environment preset="dawn" />
+        </>
+    );
+}
+
+function StudioBox(): JSX.Element {
+    return <group />;
+}
+
+function StudioLighting(): JSX.Element {
+    useEffect(() => {
+        RectAreaLightUniformsLib.init();
+    }, []);
+
+    return (
+        <>
+            <rectAreaLight
+                intensity={7.5}
+                width={STUDIO_PANEL_SIZE[0]}
+                height={STUDIO_PANEL_SIZE[1]}
+                position={[0, 4.2, 1.2]}
+                rotation={[-Math.PI / 2, 0, 0]}
+            />
+            <group position={[0, 4.05, 1.2]}>
+                {/* Coque du caisson */}
+                <mesh>
+                    <boxGeometry args={[6.2, 0.28, 2.5]} />
+                    <meshStandardMaterial color="#0e0e10" roughness={0.6} metalness={0.1} />
+                </mesh>
+                {/* Diffuseur — face inférieure du caisson, normale vers le bas */}
+                <mesh position={[0, -0.141, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={STUDIO_PANEL_SIZE} />
+                    <meshBasicMaterial color="#f6f4ef" toneMapped={false} />
+                </mesh>
+            </group>
         </>
     );
 }
