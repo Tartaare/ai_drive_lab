@@ -2,12 +2,13 @@
 
 Nouvelle branche pour cette mission (respecte les règles).
 
-
-Dans menu principal > scene 3D:
+Dans menu principal > Showroom vehicule:
 
 Vu qu'on dispose maintenant de R3F et Drei on va pouvoir moderniser le design de notre app. D'abord le menu principal:
 
-https://github.com/pmndrs/examples/tree/main/demos/
+Dans cet exemple on ne distingue pas le sol du reste un peu comme dans un studio photo. j'aimerai le même effet dans notre showroom (en conservant les reflets au sol chez nous)
+
+https://github.com/pmndrs/examples/tree/main/demos/baking-soft-shadows
 
 
 

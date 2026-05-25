@@ -1,10 +1,10 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { MeshReflectorMaterial, useGLTF } from '@react-three/drei';
-import { Component, forwardRef, MutableRefObject, ReactNode, Suspense, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Environment, MeshReflectorMaterial, useAnimations, useGLTF } from '@react-three/drei';
+import { Component, forwardRef, MutableRefObject, ReactNode, Suspense, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { SceneDebugSource } from '../../ui/SceneDebugPanel';
+import { SceneDebugSource, SoftShadowsSource } from '../../ui/SceneDebugPanel';
 import { VehicleDefinition } from '../../ui/menu/catalog';
 import { ThemeName } from '../types';
 
@@ -35,11 +35,15 @@ interface SceneRefs {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     floorMesh: THREE.Mesh | null;
+    shadowPlane: THREE.Mesh | null;
+    softShadows: SoftShadowsSource | null;
 }
 
-const FLOOR_DARK = '#151515';
-const BG_DARK = '#17171b';
-const BG_LIGHT = '#e8e8ea';
+// Couleurs de fond / sol
+const BG_DARK = '#414141';
+const BG_LIGHT = '#c4c4c4';
+const FLOOR_DARK = '#383838';
+const FLOOR_LIGHT = '#919191';
 const SWAP_DURATION_MS = 400;
 const STUDIO_PANEL_SIZE: [number, number] = [5.8, 2.1];
 
@@ -49,13 +53,34 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         const activeVehicleRef = useRef(props.vehicle);
         const sceneRefsRef = useRef<SceneRefs | null>(null);
         const floorMeshRef = useRef<THREE.Mesh | null>(null);
+        const shadowPlaneRef = useRef<THREE.Mesh | null>(null);
+        const softShadowsRef = useRef<SoftShadowsSource | null>(null);
+
+        const handleSoftShadowsReady = useCallback((ss: SoftShadowsSource) => {
+            softShadowsRef.current = ss;
+            if (sceneRefsRef.current) sceneRefsRef.current.softShadows = ss;
+        }, []);
+        const handleShadowPlaneReady = useCallback((mesh: THREE.Mesh | null) => {
+            shadowPlaneRef.current = mesh;
+            if (sceneRefsRef.current) sceneRefsRef.current.shadowPlane = mesh;
+        }, []);
+        const envPresetRef = useRef('city');
+        const setEnvPresetRef = useRef<((preset: string) => void) | null>(null);
         const debugOrbitRef = useRef(false);
         const rotationYRef = useRef(0);
-        const cameraDistanceRef = useRef(1.22);
+        const cameraDistanceRef = useRef(1.4);
         const cameraAzimuthRef = useRef(0);
         const cameraElevationRef = useRef(16);
         const cameraHeightRef = useRef(-0.74);
         const dragRef = useRef({ active: false, x: 0, y: 0, rotation: 0, elevation: 16, azimuth: 0 });
+
+        // Showroom camera configuration (normal mode - non-debug)
+        const showroomCameraRef = useRef({
+            radius: 23,        // Distance sphérique de la caméra au point cible
+            elevation: 20,     // Angle vertical en degrés (0 = horizon, 90 = zénith)
+            lookAtY: 0,        // Target Y position (where camera looks)
+            fov: 15            // Field of view
+        });
         const reduceMotion = useReducedMotion();
         const containerRef = useRef<HTMLDivElement>(null);
 
@@ -83,6 +108,12 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     scene: refs.scene,
                     camera: refs.camera,
                     ground: floorMeshRef.current ?? undefined,
+                    shadowPlane: refs.shadowPlane ?? undefined,
+                    softShadows: refs.softShadows ?? undefined,
+                    environmentPreset: {
+                        get current() { return envPresetRef.current; },
+                        onChange: (preset: string) => { setEnvPresetRef.current?.(preset); },
+                    },
                     get cameraAzimuth() { return cameraAzimuthRef.current; },
                     set cameraAzimuth(value: number) { cameraAzimuthRef.current = value; },
                     get cameraElevation() { return cameraElevationRef.current; },
@@ -90,12 +121,28 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                     get cameraDistance() { return cameraDistanceRef.current * 11.5; },
                     set cameraDistance(value: number) { cameraDistanceRef.current = THREE.MathUtils.clamp(value / 11.5, 0.86, 2.05); },
                     get cameraHeight() { return cameraHeightRef.current; },
-                    set cameraHeight(value: number) { cameraHeightRef.current = value; }
+                    set cameraHeight(value: number) { cameraHeightRef.current = value; },
+                    // Showroom camera configuration (normal mode)
+                    get showroomCamera() { return showroomCameraRef.current; }
                 };
             },
             setDebugOrbitMode: (enabled: boolean) => {
                 debugOrbitRef.current = enabled;
             },
+            setShowroomCamera: (config: Partial<{ radius: number; elevation: number; lookAtY: number; fov: number }>) => {
+                const cam = showroomCameraRef.current;
+                if (config.radius !== undefined) cam.radius = config.radius;
+                if (config.elevation !== undefined) cam.elevation = config.elevation;
+                if (config.lookAtY !== undefined) cam.lookAtY = config.lookAtY;
+                if (config.fov !== undefined) {
+                    cam.fov = THREE.MathUtils.clamp(config.fov, 10, 120);
+                    if (sceneRefsRef.current) {
+                        sceneRefsRef.current.camera.fov = cam.fov;
+                        sceneRefsRef.current.camera.updateProjectionMatrix();
+                    }
+                }
+            },
+            getShowroomCamera: () => ({ ...showroomCameraRef.current }),
             setTheme: () => undefined
         }), []);
 
@@ -194,14 +241,14 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                 <Canvas
                     className="vehicle-stage__canvas"
                     dpr={[1, 1.5]}
-                    shadows
-                    camera={{ position: [0, 1.22, 9.15], fov: 32, near: 0.1, far: 100 }}
+                    shadows="soft"
+                    camera={{ position: [0, showroomCameraRef.current.radius * Math.sin(THREE.MathUtils.degToRad(showroomCameraRef.current.elevation)), showroomCameraRef.current.radius * Math.cos(THREE.MathUtils.degToRad(showroomCameraRef.current.elevation))], fov: showroomCameraRef.current.fov, near: 0.1, far: 100 }}
                     gl={{ alpha: false, antialias: true }}
                     onCreated={({ gl, scene, camera }) => {
-                        sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera, floorMesh: null };
+                        sceneRefsRef.current = { renderer: gl, scene, camera: camera as THREE.PerspectiveCamera, floorMesh: null, shadowPlane: null, softShadows: softShadowsRef.current };
                     }}
                 >
-                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef} floorMeshRef={floorMeshRef}>
+                    <ShowroomScene theme={props.theme} debugOrbitRef={debugOrbitRef} rotationYRef={rotationYRef} cameraDistanceRef={cameraDistanceRef} cameraAzimuthRef={cameraAzimuthRef} cameraElevationRef={cameraElevationRef} cameraHeightRef={cameraHeightRef} showroomCameraRef={showroomCameraRef} floorMeshRef={floorMeshRef} envPresetRef={envPresetRef} setEnvPresetRef={setEnvPresetRef} onShadowPlaneReady={handleShadowPlaneReady} onSoftShadowsReady={handleSoftShadowsReady}>
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
@@ -216,7 +263,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
     }
 );
 
-function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef, floorMeshRef }: {
+function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDistanceRef, cameraAzimuthRef, cameraElevationRef, cameraHeightRef, showroomCameraRef, floorMeshRef, envPresetRef, setEnvPresetRef, onShadowPlaneReady, onSoftShadowsReady }: {
     children: ReactNode;
     theme: ThemeName;
     debugOrbitRef: MutableRefObject<boolean>;
@@ -225,11 +272,31 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
     cameraAzimuthRef: MutableRefObject<number>;
     cameraElevationRef: MutableRefObject<number>;
     cameraHeightRef: MutableRefObject<number>;
+    showroomCameraRef: MutableRefObject<{ radius: number; elevation: number; lookAtY: number; fov: number }>;
     floorMeshRef: MutableRefObject<THREE.Mesh | null>;
+    envPresetRef: MutableRefObject<string>;
+    setEnvPresetRef: MutableRefObject<((preset: string) => void) | null>;
+    onShadowPlaneReady: (mesh: THREE.Mesh | null) => void;
+    onSoftShadowsReady: (ss: SoftShadowsSource) => void;
 }): JSX.Element {
     const { camera } = useThree();
     const bg = theme === 'light' ? BG_LIGHT : BG_DARK;
-    const floor = FLOOR_DARK;
+    const floor = theme === 'light' ? FLOOR_LIGHT : FLOOR_DARK;
+    const isLight = theme === 'light';
+    const [envPreset, setEnvPreset] = useState(envPresetRef.current);
+    envPresetRef.current = envPreset;
+    setEnvPresetRef.current = setEnvPreset;
+    useEffect(() => {
+        onSoftShadowsReady({
+            get opacity() { return 1; },
+            set opacity(_v: number) { /* no-op: soft shadow map */ },
+            get alphaTest() { return 0.5; },
+            set alphaTest(_v: number) { /* no-op */ },
+            get colorBlend() { return 1; },
+            set colorBlend(_v: number) { /* no-op */ },
+            reset: () => undefined,
+        });
+    }, [onSoftShadowsReady]);
 
     useFrame((_, delta) => {
         if (!debugOrbitRef.current && !document.pointerLockElement) rotationYRef.current += delta * 0.32;
@@ -244,30 +311,37 @@ function ShowroomScene({ children, theme, debugOrbitRef, rotationYRef, cameraDis
             perspectiveCamera.lookAt(0, cameraHeightRef.current, 0);
             return;
         }
-        perspectiveCamera.position.set(0, cameraDistanceRef.current, 7.5 * cameraDistanceRef.current);
-        perspectiveCamera.lookAt(0, 0.2, 0);
+        // Normal showroom mode - use configurable camera settings
+        const cam = showroomCameraRef.current;
+        const elRad = THREE.MathUtils.degToRad(cam.elevation);
+        const horiz = cam.radius * Math.cos(elRad);
+        const vert = cam.radius * Math.sin(elRad);
+        perspectiveCamera.position.set(0, vert, horiz);
+        perspectiveCamera.lookAt(0, cam.lookAtY, 0);
     });
 
     return (
         <>
             <color attach="background" args={[bg]} />
-            <fog attach="fog" args={[bg, 30, 40]} />
+            <fog attach="fog" args={[bg, 22, 32]} />
+            <Environment preset={envPreset as any} />
             <StudioLighting />
             <StudioBox />
             {children}
+            <ShadowLight theme={theme} onReady={onShadowPlaneReady} />
             <mesh ref={(m) => { floorMeshRef.current = m; }} position={[0, 0.0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
                 <planeGeometry args={[50, 50]} />
                 <MeshReflectorMaterial
-                    blur={[360, 100]}
+                    blur={[400, 100]}
                     resolution={1024}
-                    mixBlur={1}
-                    mixStrength={15}
+                    mixBlur={isLight ? 8 : 4}
+                    mixStrength={isLight ? 4 : 10}
                     depthScale={1}
                     minDepthThreshold={0.85}
                     mirror={0}
                     color={floor}
-                    metalness={0.6}
-                    roughness={0.86}
+                    metalness={0}
+                    roughness={isLight ? 0.98 : 0.88}
                 />
             </mesh>
         </>
@@ -286,24 +360,48 @@ function StudioLighting(): JSX.Element {
     return (
         <>
             <rectAreaLight
-                intensity={7.5}
+                intensity={5.5}
                 width={STUDIO_PANEL_SIZE[0]}
                 height={STUDIO_PANEL_SIZE[1]}
                 position={[0, 4.2, 1.2]}
                 rotation={[-Math.PI / 2, 0, 0]}
             />
             <group position={[0, 4.05, 1.2]}>
-                {/* Coque du caisson */}
                 <mesh>
                     <boxGeometry args={[6.2, 0.28, 2.5]} />
                     <meshStandardMaterial color="#0e0e10" roughness={0.6} metalness={0.1} />
                 </mesh>
-                {/* Diffuseur — face inférieure du caisson, normale vers le bas */}
                 <mesh position={[0, -0.141, 0]} rotation={[Math.PI / 2, 0, 0]}>
                     <planeGeometry args={STUDIO_PANEL_SIZE} />
                     <meshBasicMaterial color="#f6f4ef" toneMapped={false} />
                 </mesh>
             </group>
+        </>
+    );
+}
+
+function ShadowLight({ theme, onReady }: { theme: ThemeName; onReady: (mesh: THREE.Mesh | null) => void }): JSX.Element {
+    const opacity = 0.035;
+    return (
+        <>
+            <spotLight
+                castShadow
+                position={[4, 9, -6]}
+                angle={0.38}
+                penumbra={0.85}
+                intensity={Math.PI * 2.8}
+                decay={2}
+                shadow-mapSize-width={2048}
+                shadow-mapSize-height={2048}
+                shadow-camera-near={0.5}
+                shadow-camera-far={30}
+                shadow-bias={-0.0003}
+                shadow-normalBias={0.04}
+            />
+            <mesh ref={onReady} receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.003, 0]}>
+                <planeGeometry args={[24, 24]} />
+                <shadowMaterial transparent opacity={opacity} />
+            </mesh>
         </>
     );
 }
@@ -318,17 +416,31 @@ function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone }: {
     const modelRef = useRef<THREE.Group | null>(null);
     const startRef = useRef<number | null>(null);
     const doneRef = useRef(false);
-    const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations?: THREE.AnimationClip[] };
+    const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
     const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
     const { viewport } = useThree();
     const offscreen = Math.max(4.2, viewport.width * 0.5 + 2.2);
+    const { actions, mixer } = useAnimations(gltf.animations, modelRef);
 
     useEffect(() => {
         onReady();
     }, [onReady]);
 
-    useFrame(({ clock }) => {
+    useEffect(() => {
+        if (!mixer) return;
+        if (slot.role === 'active' && gltf.animations.length > 0) {
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+            });
+        } else {
+            Object.values(actions).forEach((action) => action?.stop());
+        }
+    }, [slot.role, actions, mixer, gltf.animations.length]);
+
+    useFrame(({ clock }, delta) => {
         if (!groupRef.current || !modelRef.current) return;
+        mixer?.update(delta);
         modelRef.current.rotation.y = rotationYRef.current;
         if (slot.role === 'active') {
             groupRef.current.position.x = 0;
