@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FolderTree, MousePointerClick, ScanSearch } from 'lucide-react';
+import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getVehicleSetup, saveVehicleSetup } from '../../core/AppStorage';
 import { VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
@@ -26,12 +27,14 @@ interface VehicleSettingsViewProps {
     onClose: () => void;
     onStatsSave: (vehicleId: string, overrides: Record<VehicleStatKey, number>) => Promise<void>;
     onHighlightNodeIds: (nodeIds: string[]) => void;
+    onPickingRoleChange: (role: VehicleSetupRole | null) => void;
+    onNodePickedRef: MutableRefObject<((nodeId: string) => void) | undefined>;
     onImportPreview: (vehicle: VehicleDefinition, file: File) => void;
     onImportSave: (vehicle: VehicleDefinition, file: File) => Promise<void>;
     onImportDelete: (vehicle: VehicleDefinition) => Promise<void>;
 }
 
-export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave, onHighlightNodeIds, onImportPreview, onImportSave, onImportDelete }: VehicleSettingsViewProps): JSX.Element {
+export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave, onHighlightNodeIds, onPickingRoleChange, onNodePickedRef, onImportPreview, onImportSave, onImportDelete }: VehicleSettingsViewProps): JSX.Element {
     const backButtonRef = useRef<HTMLButtonElement | null>(null);
     const statKeys = Object.keys(vehicle.stats) as VehicleStatKey[];
     const buildDraft = (): Record<VehicleStatKey, number> =>
@@ -45,6 +48,7 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
     const [setupSaving, setSetupSaving] = useState(false);
     const [setupStatus, setSetupStatus] = useState('Chargement du modèle...');
     const [openRole, setOpenRole] = useState<VehicleSetupRole | null>(null);
+    const [pickingRole, setPickingRole] = useState<VehicleSetupRole | null>(null);
     const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
     const statsKey = JSON.stringify(
@@ -63,8 +67,12 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
     }, [active]);
 
     useEffect(() => {
-        if (!active) onHighlightNodeIds([]);
-    }, [active, onHighlightNodeIds]);
+        if (!active) {
+            onHighlightNodeIds([]);
+            setPickingRole(null);
+            onPickingRoleChange(null);
+        }
+    }, [active, onHighlightNodeIds, onPickingRoleChange]);
 
     useEffect(() => {
         let cancelled = false;
@@ -72,6 +80,8 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
         setAssignments({});
         setSetupDirty(false);
         setOpenRole(null);
+        setPickingRole(null);
+        onPickingRoleChange(null);
         if (!active) {
             setSetupStatus('');
             return () => {
@@ -100,7 +110,7 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
         return () => {
             cancelled = true;
         };
-    }, [active, vehicle.id, vehicle.modelPath]);
+    }, [active, vehicle.id, vehicle.modelPath, onPickingRoleChange]);
 
     const conflicts = useMemo(() => resolveVehicleSetupConflicts(assignments, nodes), [assignments, nodes]);
     const conflictByRole = useMemo(() => {
@@ -178,6 +188,32 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
         onHighlightNodeIds(assignments[role]?.nodeIds ?? []);
     }, [assignments, onHighlightNodeIds]);
 
+    const startPicking = useCallback((role: VehicleSetupRole): void => {
+        const next = pickingRole === role ? null : role;
+        setPickingRole(next);
+        onPickingRoleChange(next);
+        setOpenRole(null);
+        onHighlightNodeIds(assignments[role]?.nodeIds ?? []);
+    }, [pickingRole, onPickingRoleChange, onHighlightNodeIds, assignments]);
+
+    const handleNodePicked = useCallback((nodeId: string): void => {
+        if (!pickingRole) return;
+        setAssignments((prev) => {
+            const existing = prev[pickingRole]?.nodeIds ?? [];
+            const nodeIds = existing.includes(nodeId)
+                ? existing.filter((id) => id !== nodeId)
+                : [...existing, nodeId];
+            return { ...prev, [pickingRole]: { role: pickingRole, nodeIds } };
+        });
+        setSetupDirty(true);
+        onHighlightNodeIds([nodeId]);
+    }, [pickingRole, onHighlightNodeIds]);
+
+    useEffect(() => {
+        onNodePickedRef.current = pickingRole ? handleNodePicked : undefined;
+        return () => { onNodePickedRef.current = undefined; };
+    }, [pickingRole, handleNodePicked, onNodePickedRef]);
+
     return (
         <div className={`vehicle-settings-view${active ? ' is-active' : ''}`} aria-hidden={!active} onKeyDown={(event) => {
             if (event.key === 'Escape') onClose();
@@ -195,19 +231,53 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                         const roleConflicts = conflictByRole.get(role.id) ?? [];
                         const expanded = openRole === role.id;
                         return (
-                            <div className={`vehicle-setup-row${roleConflicts.length > 0 ? ' has-conflict' : ''}`} key={role.id} onMouseLeave={() => onHighlightNodeIds([])}>
-                                <button
-                                    className="vehicle-setup-role"
-                                    type="button"
-                                    aria-expanded={expanded}
-                                    tabIndex={active ? 0 : -1}
-                                    onClick={() => setOpenRole(expanded ? null : role.id)}
-                                    onMouseEnter={() => highlightRole(role.id)}
-                                    onFocus={() => highlightRole(role.id)}
-                                >
-                                    <span><strong>{role.shortLabel}</strong><small>{role.description}</small></span>
-                                    <em>{summarizeSelection(selected, nodeById)}</em>
-                                </button>
+                            <div className={`vehicle-setup-row${roleConflicts.length > 0 ? ' has-conflict' : ''}`} key={role.id} onMouseLeave={() => onHighlightNodeIds([])} onMouseEnter={() => highlightRole(role.id)}>
+                                <div className="vehicle-setup-role">
+                                    <div className="vehicle-setup-role__info">
+                                        <strong>{role.shortLabel}</strong>
+                                        <em>{summarizeSelection(selected, nodeById)}</em>
+                                        <small>{role.description}</small>
+                                    </div>
+                                    <button
+                                        className="vehicle-setup-action-btn"
+                                        type="button"
+                                        tabIndex={active ? 0 : -1}
+                                        aria-label={`Détecter automatiquement ${role.shortLabel}`}
+                                        title="Détection automatique"
+                                        onClick={() => {
+                                            const detected = detectVehicleSetupAssignments(nodes);
+                                            const nodeIds = detected[role.id]?.nodeIds ?? [];
+                                            setAssignments((prev) => ({ ...prev, [role.id]: { role: role.id, nodeIds } }));
+                                            setSetupDirty(true);
+                                            onHighlightNodeIds(nodeIds);
+                                        }}
+                                    >
+                                        <ScanSearch size={15} strokeWidth={1.8} />
+                                    </button>
+                                    <button
+                                        className={`vehicle-setup-action-btn${expanded ? ' is-active' : ''}`}
+                                        type="button"
+                                        tabIndex={active ? 0 : -1}
+                                        aria-expanded={expanded}
+                                        aria-label={`Ouvrir l'arbre de nœuds pour ${role.shortLabel}`}
+                                        title="Arbre des nœuds"
+                                        onClick={() => setOpenRole(expanded ? null : role.id)}
+                                        onFocus={() => highlightRole(role.id)}
+                                    >
+                                        <FolderTree size={15} strokeWidth={1.8} />
+                                    </button>
+                                    <button
+                                        className={`vehicle-setup-action-btn${pickingRole === role.id ? ' is-active' : ''}`}
+                                        type="button"
+                                        tabIndex={active ? 0 : -1}
+                                        aria-pressed={pickingRole === role.id}
+                                        aria-label={pickingRole === role.id ? `Annuler la sélection 3D pour ${role.shortLabel}` : `Sélectionner ${role.shortLabel} dans la scène 3D`}
+                                        title={pickingRole === role.id ? 'Cliquez sur le véhicule pour sélectionner' : 'Sélection 3D'}
+                                        onClick={() => startPicking(role.id)}
+                                    >
+                                        <MousePointerClick size={15} strokeWidth={1.8} />
+                                    </button>
+                                </div>
                                 {expanded && (
                                     <div className="vehicle-setup-dropdown">
                                         <button className="vehicle-setup-clear" type="button" tabIndex={active ? 0 : -1} onClick={() => clearRole(role.id)}>Auto / aucun mesh</button>

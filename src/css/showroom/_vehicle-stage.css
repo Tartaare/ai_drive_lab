@@ -43,6 +43,50 @@
     cursor: grabbing;
 }
 
+.vehicle-stage__r3f.is-picking,
+.vehicle-stage__r3f.is-picking .vehicle-stage__canvas {
+    cursor: crosshair;
+}
+
+.vehicle-stage__r3f.is-picking::after {
+    content: 'Cliquez sur un élément du véhicule';
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--c-motorsport-soft);
+    background: var(--c-bg-panel);
+    color: var(--c-motorsport);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: pickModeHint 0.25s var(--ease-smooth) both;
+}
+
+.vehicle-stage__r3f.is-picking::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--c-motorsport-soft);
+    pointer-events: none;
+    animation: pickModeBorder 0.25s var(--ease-smooth) both;
+}
+
+@keyframes pickModeHint {
+    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes pickModeBorder {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
 .vehicle-stage__status {
     position: absolute;
     left: 50%;

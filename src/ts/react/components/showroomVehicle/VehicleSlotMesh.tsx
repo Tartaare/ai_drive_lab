@@ -47,8 +47,9 @@ function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
     return { groupRef, modelRef };
 }
 
-export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlightedNodeIds = [], garageMode = false }: SlotAnimationProps & {
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelReady, highlightedNodeIds = [], garageMode = false }: SlotAnimationProps & {
     onReady: () => void;
+    onModelReady?: (root: THREE.Object3D | null) => void;
     highlightedNodeIds?: string[];
     garageMode?: boolean;
 }): JSX.Element {
@@ -60,6 +61,12 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
     useEffect(() => {
         onReady();
     }, [onReady]);
+
+    useEffect(() => {
+        const sourceRoot = model.children[0] ?? null;
+        onModelReady?.(sourceRoot);
+        return () => onModelReady?.(null);
+    }, [model, onModelReady]);
 
     useEffect(() => {
         if (!mixer) return;
@@ -144,6 +151,8 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
         </group>
     );
 }
+
+export type { SlotAnimationProps };
 
 function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
     const groupRef = useRef<THREE.Group | null>(null);

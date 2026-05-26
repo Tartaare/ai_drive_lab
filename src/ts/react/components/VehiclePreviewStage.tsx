@@ -10,11 +10,13 @@ interface VehiclePreviewStageProps {
     theme: ThemeName;
     highlightedNodeIds: string[];
     garageMode?: boolean;
+    pickingMode?: boolean;
+    onNodePicked?: (nodeId: string) => void;
     previewRef: MutableRefObject<ShowroomVehicleHandle | null>;
     onTransitionChange: (locked: boolean) => void;
 }
 
-export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, theme, highlightedNodeIds, garageMode, previewRef, onTransitionChange }: VehiclePreviewStageProps): JSX.Element {
+export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, theme, highlightedNodeIds, garageMode, pickingMode, onNodePicked, previewRef, onTransitionChange }: VehiclePreviewStageProps): JSX.Element {
     const [status, setStatus] = useState('');
 
     return (
@@ -27,6 +29,8 @@ export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, them
                 theme={theme}
                 highlightedNodeIds={highlightedNodeIds}
                 garageMode={garageMode}
+                pickingMode={pickingMode}
+                onNodePicked={onNodePicked}
                 onStatusChange={setStatus}
                 onTransitionChange={onTransitionChange}
             />

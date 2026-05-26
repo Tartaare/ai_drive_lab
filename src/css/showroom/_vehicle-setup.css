@@ -21,27 +21,30 @@
     width: 100%;
     min-height: 54px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
-    gap: 0.75rem;
-    align-items: center;
-    padding: 0.65rem 0.75rem;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 0;
+    align-items: stretch;
     border: 1px solid var(--c-border-subtle);
     background: rgba(255, 255, 255, 0.025);
     color: var(--c-text);
-    cursor: pointer;
-    text-align: left;
     clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-    transition: background 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), transform 0.15s var(--ease-smooth);
+    transition: background 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth);
 }
 
-.vehicle-setup-role:hover,
-.vehicle-setup-role:focus-visible {
+.vehicle-setup-row:hover .vehicle-setup-role,
+.vehicle-setup-row:focus-within .vehicle-setup-role {
     border-color: var(--c-motorsport-soft);
     background: var(--c-motorsport-dim);
 }
 
-.vehicle-setup-role:active {
-    transform: scale(0.985);
+.vehicle-setup-role__info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.65rem 0.75rem;
+    min-width: 0;
+    border-right: 1px solid var(--c-border-subtle);
 }
 
 .vehicle-setup-role strong {
@@ -54,28 +57,65 @@
     text-transform: uppercase;
 }
 
-.vehicle-setup-role small,
-.vehicle-setup-option small {
-    display: block;
-    margin-top: 0.25rem;
-    color: var(--c-text-muted);
-    font-family: var(--font-body);
-    font-size: 0.66rem;
-    line-height: 1.2;
-}
-
 .vehicle-setup-role em {
-    max-width: 128px;
+    display: block;
     color: var(--c-motorsport);
     font-family: var(--font-body);
     font-size: 0.68rem;
     font-style: normal;
     letter-spacing: 0.06em;
     overflow: hidden;
-    text-align: right;
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+.vehicle-setup-role small,
+.vehicle-setup-option small {
+    display: block;
+    color: var(--c-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.63rem;
+    line-height: 1.2;
+}
+
+.vehicle-setup-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 54px;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--c-border-subtle);
+    background: transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: color 0.15s var(--ease-smooth), background 0.15s var(--ease-smooth);
+}
+
+.vehicle-setup-action-btn:hover,
+.vehicle-setup-action-btn:focus-visible {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+
+.vehicle-setup-action-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.vehicle-setup-action-btn.is-active {
+    color: var(--c-motorsport);
+    background: var(--c-motorsport-dim);
+}
+
+.vehicle-setup-action-btn--disabled,
+.vehicle-setup-action-btn[disabled] {
+    opacity: 0.28;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 .vehicle-setup-row.has-conflict .vehicle-setup-role {
@@ -207,11 +247,16 @@
     }
 
     .vehicle-setup-role {
-        grid-template-columns: minmax(0, 1fr);
+        grid-template-columns: 1fr 1fr 1fr 1fr;
     }
 
-    .vehicle-setup-role em {
-        max-width: 100%;
-        text-align: left;
+    .vehicle-setup-role__info {
+        grid-column: 1 / -1;
+        border-right: 0;
+        border-bottom: 1px solid var(--c-border-subtle);
+    }
+
+    .vehicle-setup-action-btn {
+        min-height: 40px;
     }
 }
