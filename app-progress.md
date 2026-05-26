@@ -1,3 +1,35 @@
+# SPRINT vehicle-model-import — Import local de modèles véhicule 3D
+
+# Date : 2026-05-26
+
+# Statut : termine
+
+# Composants :
+- `src/ts/core/AppStorage.ts`
+- `src/ts/ui/menu/catalog.ts`
+- `src/ts/react/App.tsx`
+- `src/ts/react/hooks/useImportedVehicles.ts`
+- `src/ts/react/vehicleImport.ts`
+- `src/ts/react/components/Showroom.tsx`
+- `src/ts/react/components/VehicleSettingsView.tsx`
+- `src/ts/react/components/VehicleImportPanel.tsx`
+- `src/css/style.css`
+- `src/css/showroom/_vehicle-import.css`
+
+# Validation :
+- Creation de la branche `feature/sprint-vehicle-model-import` depuis `main`.
+- Le panneau droit de `VehicleSettingsView` devient un importeur GLB/GLTF avec drag and drop, bouton fichier, checklist, états validation/erreur/succès/enregistrement.
+- Les fichiers importés sont validés côté client avec `GLTFLoader`, prévisualisés immédiatement dans la scène showroom via URL Blob, puis persistables dans IndexedDB.
+- Ajout du store IndexedDB `imported-vehicles` en version `3`, stockant metadata et Blob local du modèle.
+- Les véhicules importés sauvegardés sont restaurés au chargement, intégrés au carousel et supprimables depuis le même panneau.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille des chunks `three` / application.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Risque moyen : les `.gltf` avec ressources externes non embarquées peuvent échouer en import navigateur local ; le message d’erreur recommande `.glb` ou ressources embarquées.
+- Risque faible : les URLs Blob sont recréées à chaque chargement depuis IndexedDB et révoquées à la suppression/démontage ; une validation manuelle longue session reste recommandée pour surveiller la mémoire avec de gros fichiers.
+
 # SPRINT modular-file-size — Modularisation fichiers >300 lignes
 
 # Date : 2026-05-25

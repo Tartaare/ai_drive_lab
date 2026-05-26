@@ -16,6 +16,7 @@ APEX est une simulation de conduite 3D immersive concue comme une experience coc
 ### Caracteristiques principales
 
 - **Showroom automobile** -- Menu principal avec preview vehicule 3D glossy Drei, circuit top-down et entree reglages vehicule
+- **Garage local** -- Import GLB/GLTF avec preview 3D, checklist de validation et persistance IndexedDB
 - **Conduite physique** -- Simulation Cannon.js avec vehicule realiste
 - **Circuits proceduraux** -- Generation infinie avec parametres configurables
 - **Design System APEX** -- Interface cockpit motorsport, dark-first
@@ -139,6 +140,7 @@ Le systeme de generation procedurale supporte :
 | `track-config` | Sliders de generation, preset difficulte | 1 entree |
 | `saved-circuits` | Circuits favoris (nom, seed, parametres) | 10 max |
 | `sessions` | Historique temps au tour, duree | 50 dernieres |
+| `imported-vehicles` | Modeles GLB/GLTF importes localement | Stockage navigateur |
 
 Restauration asynchrone au chargement sans blocage du rendu initial.
 
@@ -204,6 +206,7 @@ La verification TypeScript passe avec TypeScript 5 et la configuration TSX React
 ## Roadmap
 
 - [x] Showroom automobile avec previews 3D (vehicule + circuit) et sous-vue reglages vehicule
+- [x] Import local de modeles vehicule GLB/GLTF avec sauvegarde IndexedDB
 - [x] Architecture modulaire piste procedurale
 - [x] Persistance IndexedDB avec 4 magasins
 - [x] Theme clair/sombre avec toggle accessible
@@ -222,6 +225,7 @@ Les sprints realises sont documentes dans `app-progress.md` :
 
 | Sprint | Date | Focus |
 |--------|------|-------|
+| vehicle-model-import | 2026-05-26 | Import local GLB/GLTF, preview 3D et suppression IndexedDB |
 | showroom-vehicle-settings-entry | 2026-05-25 | Acces reglages vehicule dans le Showroom React |
 | react-vite-modernization | 2026-05-24 | Migration React/Vite, installation npm et validations |
 | showroom-main-menu | 2026-05-23 | Refonte menu showroom automobile avec previews 3D |
