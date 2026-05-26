@@ -1,6 +1,6 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Component, MutableRefObject, ReactNode, useEffect, useMemo, useRef } from 'react';
+import { Component, MutableRefObject, ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { VehicleDefinition } from '../../../ui/menu/catalog';
 import { createVehicleNodeIndex } from '../../../vehicles/vehicleSetupInventory';
@@ -151,7 +151,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelRe
         <group ref={groupRef}>
             <primitive ref={modelRef} object={model} />
             <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />
-            {pickingMode && <VehiclePickHoverBox model={model} hoveredNodeId={hoveredNodeId} selectedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />}
+            {pickingMode && <VehiclePickOutlines model={model} hoveredNodeId={hoveredNodeId} selectedNodeIds={highlightedNodeIds} />}
         </group>
     );
 }
@@ -197,65 +197,65 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
     );
 }
 
-function computeNodeBox(model: THREE.Group, nodeId: string): { center: THREE.Vector3; size: THREE.Vector3 } | null {
-    const sourceRoot = model.children[0];
-    if (!sourceRoot) return null;
-    model.updateMatrixWorld(true);
-    const nodeIndex = createVehicleNodeIndex(sourceRoot);
-    const node = nodeIndex.get(nodeId);
-    if (!node) return null;
-    const worldBox = new THREE.Box3().setFromObject(node);
-    if (worldBox.isEmpty()) return null;
-    const center = new THREE.Vector3();
-    const size = new THREE.Vector3();
-    worldBox.getCenter(center).applyMatrix4(model.matrixWorld.clone().invert());
-    worldBox.getSize(size);
-    return { center, size };
-}
-
-function VehiclePickHoverBox({ model, hoveredNodeId, selectedNodeIds, rotationYRef }: {
+function VehiclePickOutlines({ model, hoveredNodeId, selectedNodeIds }: {
     model: THREE.Group;
     hoveredNodeId: string | null;
     selectedNodeIds: string[];
-    rotationYRef: MutableRefObject<number>;
-}): JSX.Element | null {
-    const groupRef = useRef<THREE.Group | null>(null);
-
-    const hoverBox = useMemo(
-        () => hoveredNodeId ? computeNodeBox(model, hoveredNodeId) : null,
-        [hoveredNodeId, model]
+}): null {
+    const sourceRoot = model.children[0];
+    const nodeIndex = useMemo(
+        () => sourceRoot ? createVehicleNodeIndex(sourceRoot) : new Map<string, THREE.Object3D>(),
+        [sourceRoot]
     );
 
-    const selectedBoxes = useMemo(
-        () => selectedNodeIds.flatMap((id) => {
-            const box = computeNodeBox(model, id);
-            return box ? [{ id, ...box }] : [];
-        }),
-        [selectedNodeIds, model]
-    );
+    const getMeshes = (nodeId: string): THREE.Mesh[] => {
+        const node = nodeIndex.get(nodeId);
+        if (!node) return [];
+        const meshes: THREE.Mesh[] = [];
+        node.traverse((child) => { if ((child as THREE.Mesh).isMesh) meshes.push(child as THREE.Mesh); });
+        return meshes;
+    };
 
-    useFrame(() => {
-        if (groupRef.current) groupRef.current.rotation.y = rotationYRef.current;
-    });
+    useLayoutEffect(() => {
+        const outlinesByMesh = new Map<THREE.Mesh, THREE.Mesh>();
 
-    if (!hoverBox && selectedBoxes.length === 0) return null;
+        const addOutline = (mesh: THREE.Mesh, color: string, thickness: number): void => {
+            if (outlinesByMesh.has(mesh)) return;
+            const outlineMesh = new THREE.Mesh(mesh.geometry);
+            outlineMesh.renderOrder = 9;
+            const mat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(color),
+                side: THREE.BackSide,
+                transparent: true,
+                depthTest: false,
+            });
+            outlineMesh.material = mat;
+            outlineMesh.onBeforeRender = () => {
+                outlineMesh.matrixWorld.copy(mesh.matrixWorld);
+            };
+            const scale = 1 + thickness;
+            outlineMesh.scale.set(scale, scale, scale);
+            mesh.parent?.add(outlineMesh);
+            outlinesByMesh.set(mesh, outlineMesh);
+        };
 
-    return (
-        <group ref={groupRef} renderOrder={9}>
-            {selectedBoxes.map((box) => (
-                <mesh key={`sel-${box.id}`} position={box.center}>
-                    <boxGeometry args={[Math.max(box.size.x + 0.04, 0.06), Math.max(box.size.y + 0.04, 0.06), Math.max(box.size.z + 0.04, 0.06)]} />
-                    <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.9} depthTest={false} />
-                </mesh>
-            ))}
-            {hoverBox && (
-                <mesh key="hover" position={hoverBox.center}>
-                    <boxGeometry args={[Math.max(hoverBox.size.x + 0.06, 0.08), Math.max(hoverBox.size.y + 0.06, 0.08), Math.max(hoverBox.size.z + 0.06, 0.08)]} />
-                    <meshBasicMaterial color="#00e5ff" wireframe transparent opacity={0.95} depthTest={false} />
-                </mesh>
-            )}
-        </group>
-    );
+        const hoverMeshes = hoveredNodeId ? getMeshes(hoveredNodeId) : [];
+        const selectedMeshes = selectedNodeIds.flatMap(getMeshes);
+        const hoverSet = new Set(hoverMeshes.map((m) => m.uuid));
+
+        hoverMeshes.forEach((m) => addOutline(m, '#00e5ff', 0.055));
+        selectedMeshes.filter((m) => !hoverSet.has(m.uuid)).forEach((m) => addOutline(m, '#ff8a1f', 0.04));
+
+        return () => {
+            outlinesByMesh.forEach((outlineMesh) => {
+                outlineMesh.parent?.remove(outlineMesh);
+                (outlineMesh.material as THREE.Material).dispose();
+            });
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hoveredNodeId, selectedNodeIds, nodeIndex]);
+
+    return null;
 }
 
 export class VehicleSlotBoundary extends Component<{

@@ -9,7 +9,8 @@ Dans le garage > menu Detection map :
 - On va implémenter la sélection du noeud directement sur la scène 3D. 
 Par exemple: il s'agira pour l'utilisateur de cliquer sur la roue avant gauche du véhicule dans la scène 3D pour la sélectionner.
 
-Une fois en mode crosshair de selection: il
+Une fois en mode crosshair de selection:
+- Plutot que rendre tout le modele semi-transparent sauf le noeud survolé/sélectionné, on va plutot mettre en évidence uniquement le noeud avec une bordure d'une couleur différente ou un effet moderne de ce type.
 
 
 
