@@ -20,6 +20,9 @@ export interface VehicleDefinition {
     name: string;
     modelPath: string;
     stats: Record<VehicleStatKey, VehicleStat>;
+    source?: 'built-in' | 'imported';
+    fileName?: string;
+    saved?: boolean;
 }
 
 export interface GameModeDefinition {

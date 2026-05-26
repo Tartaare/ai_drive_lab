@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
+import { VehicleImportPanel } from './VehicleImportPanel';
 
 interface VehicleSettingsViewProps {
     active: boolean;
@@ -7,10 +8,13 @@ interface VehicleSettingsViewProps {
     transitionLocked: boolean;
     onVehicleChange: (direction: -1 | 1) => void;
     onClose: () => void;
-    onStatsSave: (vehicleId: string, overrides: Record<VehicleStatKey, number>) => void;
+    onStatsSave: (vehicleId: string, overrides: Record<VehicleStatKey, number>) => Promise<void>;
+    onImportPreview: (vehicle: VehicleDefinition, file: File) => void;
+    onImportSave: (vehicle: VehicleDefinition, file: File) => Promise<void>;
+    onImportDelete: (vehicle: VehicleDefinition) => Promise<void>;
 }
 
-export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave }: VehicleSettingsViewProps): JSX.Element {
+export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave, onImportPreview, onImportSave, onImportDelete }: VehicleSettingsViewProps): JSX.Element {
     const backButtonRef = useRef<HTMLButtonElement | null>(null);
     const statKeys = Object.keys(vehicle.stats) as VehicleStatKey[];
 
@@ -75,9 +79,9 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                 <div className="vehicle-settings-panel__body" aria-hidden="true" />
             </section>
             <section className="vehicle-settings-panel vehicle-settings-panel--circuit" aria-labelledby="vehicle-settings-circuit-title">
-                <span className="showroom-kicker">Vehicle setup</span>
-                <h2 id="vehicle-settings-circuit-title">Circuit</h2>
-                <div className="vehicle-settings-panel__body" aria-hidden="true" />
+                <span className="showroom-kicker">Garage import</span>
+                <h2 id="vehicle-settings-circuit-title">3D Models</h2>
+                <VehicleImportPanel active={active} vehicle={vehicle} onPreview={onImportPreview} onSave={onImportSave} onDelete={onImportDelete} />
             </section>
             <div className="vehicle-settings-mini-selector">
                 <div className="vehicle-info__glass">

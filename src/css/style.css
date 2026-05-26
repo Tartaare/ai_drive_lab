@@ -6,6 +6,7 @@
 @import './showroom/_vehicle-stage.css';
 @import './showroom/_vehicle.css';
 @import './showroom/_vehicle-stats.css';
+@import './showroom/_vehicle-import.css';
 @import './showroom/_track.css';
 @import './components/_controls.css';
 @import './components/_theme-toggle.css';

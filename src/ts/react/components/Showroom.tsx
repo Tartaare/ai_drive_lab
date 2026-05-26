@@ -1,5 +1,5 @@
 import { MutableRefObject, useCallback, useEffect, useMemo, useState } from 'react';
-import { GAME_MODES, TRACKS, VEHICLES, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
+import { GAME_MODES, TRACKS, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
 import { MenuRoute } from '../hooks/useHashRoute';
@@ -15,6 +15,7 @@ import { getVehicleStats, saveVehicleStats } from '../../core/AppStorage';
 interface ShowroomProps {
     theme: ThemeName;
     vehicleIndex: number;
+    vehicles: VehicleDefinition[];
     modeId: GameModeDefinition['id'];
     vehicleDirection: -1 | 0 | 1;
     transitionLocked: boolean;
@@ -31,12 +32,15 @@ interface ShowroomProps {
     onNewTrack: () => void;
     onStart: () => void;
     onTransitionChange: (locked: boolean) => void;
+    onImportPreview: (vehicle: VehicleDefinition, file: File) => void;
+    onImportSave: (vehicle: VehicleDefinition, file: File) => Promise<void>;
+    onImportDelete: (vehicle: VehicleDefinition) => Promise<void>;
 }
 
 export function Showroom(props: ShowroomProps): JSX.Element {
     const vehicleSettingsOpen = props.vehicleSettingsOpen;
     const [statsOverrides, setStatsOverrides] = useState<Record<VehicleStatKey, number> | null>(null);
-    const rawVehicle = VEHICLES[props.vehicleIndex] || VEHICLES[0];
+    const rawVehicle = props.vehicles[props.vehicleIndex] || props.vehicles[0];
     const vehicle = useMemo((): typeof rawVehicle => {
         if (!statsOverrides) return rawVehicle;
         return {
@@ -49,8 +53,8 @@ export function Showroom(props: ShowroomProps): JSX.Element {
             ) as typeof rawVehicle.stats
         };
     }, [rawVehicle, statsOverrides]);
-    const previousIndex = (props.vehicleIndex - props.vehicleDirection + VEHICLES.length) % VEHICLES.length;
-    const previousVehicle = props.vehicleDirection === 0 ? null : VEHICLES[previousIndex];
+    const previousIndex = (props.vehicleIndex - props.vehicleDirection + props.vehicles.length) % props.vehicles.length;
+    const previousVehicle = props.vehicleDirection === 0 ? null : props.vehicles[previousIndex];
 
     useEffect(() => {
         setStatsOverrides(null);
@@ -67,10 +71,10 @@ export function Showroom(props: ShowroomProps): JSX.Element {
     const track = mode.trackId ? TRACKS.find((item) => item.id === mode.trackId) || TRACKS[0] : null;
     const isValid = !!track && isModeEnabled(mode, props.trackAvailability);
     const adjacentVehicles = useMemo(() => {
-        const prev = (props.vehicleIndex - 1 + VEHICLES.length) % VEHICLES.length;
-        const next = (props.vehicleIndex + 1) % VEHICLES.length;
-        return [VEHICLES[prev], VEHICLES[next]];
-    }, [props.vehicleIndex]);
+        const prev = (props.vehicleIndex - 1 + props.vehicles.length) % props.vehicles.length;
+        const next = (props.vehicleIndex + 1) % props.vehicles.length;
+        return [props.vehicles[prev], props.vehicles[next]].filter(Boolean);
+    }, [props.vehicleIndex, props.vehicles]);
     const proceduralLength = useMemo(() => Math.round(getProceduralLength(props.proceduralConfig, props.proceduralSeed, props.proceduralDifficulty)), [props.proceduralConfig, props.proceduralSeed, props.proceduralDifficulty]);
     const isLight = props.theme === 'light';
 
@@ -121,7 +125,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                         {track && track.id === 'procedural' ? <><TrackMiniature config={props.proceduralConfig} seed={props.proceduralSeed} difficulty={props.proceduralDifficulty} /><div className="track-panel__body"><span className="track-panel__label">{track.label}</span><strong>{proceduralLength} m</strong><span>Difficulté {props.proceduralDifficulty.toUpperCase()}</span><span>Seed {props.proceduralSeed}</span></div><button className="track-new-btn" type="button" tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onNewTrack}>New Track</button></> : <><div className="track-miniature track-miniature--empty">GP</div><div className="track-panel__body"><span className="track-panel__label">{track ? track.label : 'No track'}</span><strong>Indisponible</strong><span>{track ? track.unavailableReason || 'Asset absent' : 'Mode indisponible'}</span></div></>}
                     </div>
                 </section>
-                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} />
+                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} onImportPreview={props.onImportPreview} onImportSave={props.onImportSave} onImportDelete={props.onImportDelete} />
             </div>
         </div>
     );

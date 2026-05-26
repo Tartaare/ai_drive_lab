@@ -30,6 +30,16 @@ export interface SavedCircuit {
 
 export type VehicleStatsOverride = Record<string, number>;
 
+export interface ImportedVehicleRecord {
+    id: string;
+    name: string;
+    fileName: string;
+    mimeType: string;
+    size: number;
+    blob: Blob;
+    createdAt: number;
+}
+
 // ─── Sessions ──────────────────────────────────────────────────────────────────
 
 export interface Session {
@@ -44,7 +54,7 @@ export interface Session {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DB_NAME = 'apex-racing-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const MAX_SESSIONS = 50;
 const MAX_FAVORITES = 10;
 
@@ -53,6 +63,7 @@ const STORE_TRACK = 'track-config';
 const STORE_CIRCUITS = 'saved-circuits';
 const STORE_SESSIONS = 'sessions';
 const STORE_VEHICLE_STATS = 'vehicle-stats';
+const STORE_IMPORTED_VEHICLES = 'imported-vehicles';
 
 const SINGLETON_KEY = 'singleton';
 
@@ -80,6 +91,9 @@ async function getDB(): Promise<any> {
                 }
                 if (!db.objectStoreNames.contains(STORE_VEHICLE_STATS)) {
                     db.createObjectStore(STORE_VEHICLE_STATS);
+                }
+                if (!db.objectStoreNames.contains(STORE_IMPORTED_VEHICLES)) {
+                    db.createObjectStore(STORE_IMPORTED_VEHICLES, { keyPath: 'id' });
                 }
             },
         });
@@ -180,6 +194,38 @@ export async function saveVehicleStats(vehicleId: string, overrides: VehicleStat
     try {
         await db.put(STORE_VEHICLE_STATS, overrides, vehicleId);
     } catch { /* silently degrade */ }
+}
+
+// ─── Imported Vehicles ────────────────────────────────────────────────────────
+
+export async function getImportedVehicles(): Promise<ImportedVehicleRecord[]> {
+    const db = await getDB();
+    if (!db) return [];
+    try {
+        return (await db.getAll(STORE_IMPORTED_VEHICLES)) ?? [];
+    } catch {
+        return [];
+    }
+}
+
+export async function saveImportedVehicle(vehicle: ImportedVehicleRecord): Promise<void> {
+    const db = await getDB();
+    if (!db) throw new Error('IndexedDB indisponible : stockage local impossible.');
+    try {
+        await db.put(STORE_IMPORTED_VEHICLES, vehicle);
+    } catch {
+        throw new Error('Le véhicule n’a pas pu être enregistré dans IndexedDB.');
+    }
+}
+
+export async function deleteImportedVehicle(id: string): Promise<void> {
+    const db = await getDB();
+    if (!db) throw new Error('IndexedDB indisponible : suppression impossible.');
+    try {
+        await db.delete(STORE_IMPORTED_VEHICLES, id);
+    } catch {
+        throw new Error('Le véhicule importé n’a pas pu être supprimé.');
+    }
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
