@@ -194,9 +194,6 @@
     position: relative;
     z-index: 4;
     min-height: 330px;
-    max-height: calc(100dvh - 6.5rem - 2rem);
-    display: flex;
-    flex-direction: column;
     padding: 1.15rem;
     background: var(--c-bg-elevated);
     border: 1px solid var(--c-border-subtle);
@@ -221,6 +218,10 @@
 
 .vehicle-settings-panel--drive {
     grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 6.5rem - 8.5rem);
+    overflow: hidden;
 }
 
 .vehicle-settings-panel--circuit {
