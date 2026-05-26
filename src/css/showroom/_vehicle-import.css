@@ -1,0 +1,142 @@
+.vehicle-import {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.vehicle-import__input {
+    display: none;
+}
+
+.vehicle-import__dropzone {
+    min-height: 118px;
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0.35rem;
+    padding: 1rem;
+    border: 1px dashed var(--c-border-strong);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent 48%),
+        rgba(0, 0, 0, 0.16);
+    color: var(--c-text);
+    cursor: pointer;
+    text-align: center;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition:
+        transform 0.18s var(--ease-smooth),
+        border-color 0.2s var(--ease-smooth),
+        background 0.2s var(--ease-smooth),
+        color 0.2s var(--ease-smooth);
+}
+
+.vehicle-import__dropzone:hover,
+.vehicle-import__dropzone:focus-visible,
+.vehicle-import__dropzone.is-dragging {
+    border-color: var(--c-motorsport-soft);
+    background: var(--c-motorsport-dim);
+    color: var(--c-motorsport);
+}
+
+.vehicle-import__dropzone:active {
+    transform: scale(0.985);
+}
+
+.vehicle-import__dropzone strong {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.vehicle-import__dropzone span {
+    font-size: 0.72rem;
+    color: var(--c-text-muted);
+}
+
+.vehicle-import__checklist {
+    display: grid;
+    gap: 0.45rem;
+    list-style: none;
+}
+
+.vehicle-import__checklist li {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 22px;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-text-muted);
+}
+
+.vehicle-import__checklist span {
+    display: inline-grid;
+    place-items: center;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--c-border-subtle);
+    font-family: var(--font-display);
+    line-height: 1;
+}
+
+.vehicle-import__checklist .is-done {
+    color: var(--c-text);
+}
+
+.vehicle-import__checklist .is-done span {
+    border-color: rgba(52, 199, 89, 0.58);
+    color: var(--c-success);
+}
+
+.vehicle-import__checklist .is-busy span {
+    border-color: var(--c-motorsport-soft);
+    color: var(--c-motorsport);
+}
+
+.vehicle-import__message {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    font-size: 0.74rem;
+    line-height: 1.35;
+}
+
+.vehicle-import__message--error {
+    color: var(--c-danger);
+}
+
+.vehicle-import__message--success {
+    color: var(--c-success);
+}
+
+.vehicle-import__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+}
+
+.vehicle-import__actions .vehicle-settings-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+}
+
+.vehicle-settings-action--danger {
+    background: rgba(255, 59, 48, 0.08);
+    color: var(--c-danger);
+}
+
+.vehicle-settings-action--danger:hover:not(:disabled) {
+    border-color: rgba(255, 59, 48, 0.68);
+    background: rgba(255, 59, 48, 0.16);
+}
+
+@media (max-width: 768px) {
+    .vehicle-import__dropzone {
+        min-height: 104px;
+    }
+}

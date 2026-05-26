@@ -17,6 +17,7 @@ APEX est une simulation de conduite 3D immersive concue comme une experience coc
 
 - **Showroom automobile** -- Menu principal avec preview vehicule 3D glossy Drei, circuit top-down et entree reglages vehicule
 - **Mapping véhicule** -- Assignation visuelle des roues, volant et collision chassis par mesh ou groupe de meshes
+- **Garage local** -- Import GLB/GLTF avec preview 3D, checklist de validation et persistance IndexedDB
 - **Conduite physique** -- Simulation Cannon.js avec vehicule realiste
 - **Circuits proceduraux** -- Generation infinie avec parametres configurables
 - **Design System APEX** -- Interface cockpit motorsport, dark-first
@@ -141,6 +142,7 @@ Le systeme de generation procedurale supporte :
 | `saved-circuits` | Circuits favoris (nom, seed, parametres) | 10 max |
 | `sessions` | Historique temps au tour, duree | 50 dernieres |
 | `vehicle-setup-assignments` | Mapping roles vehicule vers nodes GLTF | 1 entree par vehicule |
+| `imported-vehicles` | Modeles GLB/GLTF importes localement | Stockage navigateur |
 
 Restauration asynchrone au chargement sans blocage du rendu initial.
 
@@ -207,8 +209,9 @@ La verification TypeScript passe avec TypeScript 5 et la configuration TSX React
 
 - [x] Showroom automobile avec previews 3D (vehicule + circuit) et sous-vue reglages vehicule
 - [x] Mapping des elements vehicule avec selection multi-mesh et persistance IndexedDB
+- [x] Import local de modeles vehicule GLB/GLTF avec sauvegarde IndexedDB
 - [x] Architecture modulaire piste procedurale
-- [x] Persistance IndexedDB avec 5 magasins
+- [x] Persistance IndexedDB avec 6 magasins
 - [x] Theme clair/sombre avec toggle accessible
 - [x] Collisions kerbs et bordures
 - [x] Tests deterministes 406 cas
@@ -226,6 +229,7 @@ Les sprints realises sont documentes dans `app-progress.md` :
 | Sprint | Date | Focus |
 |--------|------|-------|
 | vehicle-part-detection | 2026-05-26 | Mapping roues/volant/collision, groupes multi-mesh et persistance |
+| vehicle-model-import | 2026-05-26 | Import local GLB/GLTF, preview 3D et suppression IndexedDB |
 | showroom-vehicle-settings-entry | 2026-05-25 | Acces reglages vehicule dans le Showroom React |
 | react-vite-modernization | 2026-05-24 | Migration React/Vite, installation npm et validations |
 | showroom-main-menu | 2026-05-23 | Refonte menu showroom automobile avec previews 3D |

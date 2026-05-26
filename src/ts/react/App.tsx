@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GAME_MODES, TRACKS, VEHICLES, DEFAULT_PROCEDURAL_CONFIG, GameModeDefinition } from '../ui/menu/catalog';
+import { GAME_MODES, TRACKS, VEHICLES, DEFAULT_PROCEDURAL_CONFIG, GameModeDefinition, VehicleDefinition } from '../ui/menu/catalog';
 import { SceneDebugPanel } from '../ui/SceneDebugPanel';
 import { World } from '../main';
 import { TrackConfig } from '../world/ProceduralTrack';
@@ -12,6 +12,7 @@ import { ShowroomVehicleHandle } from './components/ShowroomVehicleCanvas';
 import { getProceduralLength } from './components/TrackMiniature';
 import { emptyTelemetry, useDrivingTelemetry } from './hooks/useDrivingTelemetry';
 import { useHashRoute } from './hooks/useHashRoute';
+import { useImportedVehicles } from './hooks/useImportedVehicles';
 import { useSceneDebugHotkey } from './hooks/useSceneDebugHotkey';
 import { AppPhase, MainMenuSelection, ProceduralParamKey, TelemetryState, ThemeName } from './types';
 
@@ -33,6 +34,7 @@ export function App(): JSX.Element {
     const [generationPending, setGenerationPending] = useState(false);
     const [favorites, setFavorites] = useState<AppStorage.SavedCircuit[]>([]);
     const [telemetry, setTelemetry] = useState<TelemetryState>(emptyTelemetry);
+    const { importedVehicles, draftVehicle, loadImportedVehicles, previewImportedVehicle, saveImportedVehicle, deleteImportedVehicle } = useImportedVehicles();
 
     const worldRef = useRef<World | null>(null);
     const previewRef = useRef<ShowroomVehicleHandle | null>(null);
@@ -42,8 +44,10 @@ export function App(): JSX.Element {
     const persistTimerRef = useRef<number | null>(null);
     const launchPendingRef = useRef(false);
 
+    const vehicles = useMemo(() => draftVehicle ? [...VEHICLES, ...importedVehicles, draftVehicle] : [...VEHICLES, ...importedVehicles], [draftVehicle, importedVehicles]);
+
     const selection = useMemo<MainMenuSelection>(() => {
-        const vehicle = VEHICLES[vehicleIndex] || VEHICLES[0];
+        const vehicle = vehicles[vehicleIndex] || vehicles[0] || VEHICLES[0];
         const mode = GAME_MODES.find((item) => item.id === modeId) || GAME_MODES[0];
         const track = mode.trackId ? TRACKS.find((item) => item.id === mode.trackId) || TRACKS[0] : null;
         const isValid = !!track && !mode.unavailableReason && !!mode.trackId && trackAvailability[mode.trackId] === true;
@@ -58,7 +62,7 @@ export function App(): JSX.Element {
             isValid,
             procedural: track && track.id === 'procedural' ? { seed: proceduralSeed, difficulty: proceduralDifficulty, config: proceduralConfig, lengthMeters } : null
         };
-    }, [modeId, phase, proceduralConfig, proceduralDifficulty, proceduralSeed, trackAvailability, vehicleIndex]);
+    }, [modeId, phase, proceduralConfig, proceduralDifficulty, proceduralSeed, trackAvailability, vehicleIndex, vehicles]);
 
     const loadFavorites = useCallback(() => {
         void AppStorage.getFavorites().then(setFavorites).catch(() => setFavorites([]));
@@ -98,7 +102,7 @@ export function App(): JSX.Element {
     useEffect(() => {
         let cancelled = false;
         async function hydrate(): Promise<void> {
-            const [prefs, trackConfig] = await Promise.all([AppStorage.getPrefs(), AppStorage.getTrackConfig()]);
+            const [prefs, trackConfig, storedVehicles] = await Promise.all([AppStorage.getPrefs(), AppStorage.getTrackConfig(), loadImportedVehicles()]);
             let nextMode: GameModeDefinition['id'] = 'free_roam';
             if (trackConfig && !cancelled) {
                 setProceduralConfig({ ...DEFAULT_PROCEDURAL_CONFIG, ...trackConfig });
@@ -106,7 +110,8 @@ export function App(): JSX.Element {
                 setProceduralDifficulty(trackConfig.difficulty || 'moyen');
             }
             if (prefs && !cancelled) {
-                const storedVehicleIndex = VEHICLES.findIndex((vehicle) => vehicle.id === prefs.vehicleId);
+                const hydratedVehicles = [...VEHICLES, ...storedVehicles];
+                const storedVehicleIndex = hydratedVehicles.findIndex((vehicle) => vehicle.id === prefs.vehicleId);
                 if (storedVehicleIndex >= 0) {
                     console.info('[APEX][VehicleMenu] hydrate vehicle preference', {
                         vehicleId: prefs.vehicleId,
@@ -133,7 +138,7 @@ export function App(): JSX.Element {
         return () => {
             cancelled = true;
         };
-    }, [applyTheme, loadFavorites]);
+    }, [applyTheme, loadFavorites, loadImportedVehicles]);
 
     useSceneDebugHotkey(debugPanelRef, worldRef, previewRef);
     useDrivingTelemetry(phase, worldRef, setTelemetry);
@@ -202,8 +207,8 @@ export function App(): JSX.Element {
         console.info('[APEX][VehicleMenu] vehicle change requested', { direction, fromIndex: vehicleIndex });
         setPreviousVehicleDirection(direction);
         setVehicleIndex((index) => {
-            const nextIndex = (index + direction + VEHICLES.length) % VEHICLES.length;
-            const nextVehicle = VEHICLES[nextIndex] || VEHICLES[0];
+            const nextIndex = (index + direction + vehicles.length) % vehicles.length;
+            const nextVehicle = vehicles[nextIndex] || VEHICLES[0];
             console.info('[APEX][VehicleMenu] vehicle index committed', {
                 direction,
                 fromIndex: index,
@@ -213,7 +218,7 @@ export function App(): JSX.Element {
             void AppStorage.savePrefs({ vehicleId: nextVehicle.id, levelId: selection.levelId, theme }).catch(() => undefined);
             return nextIndex;
         });
-    }, [selection.levelId, theme, transitionLocked, vehicleIndex]);
+    }, [selection.levelId, theme, transitionLocked, vehicleIndex, vehicles]);
 
     const handleVehicleTransitionChange = useCallback((locked: boolean) => {
         setTransitionLocked(locked);
@@ -305,6 +310,27 @@ export function App(): JSX.Element {
         void AppStorage.deleteCircuit(id).then(loadFavorites).catch(() => undefined);
     }, [loadFavorites]);
 
+    const handleImportPreview = useCallback((vehicle: VehicleDefinition) => {
+        previewImportedVehicle(vehicle);
+        setPreviousVehicleDirection(0);
+        setVehicleIndex(VEHICLES.length + importedVehicles.length);
+    }, [importedVehicles.length, previewImportedVehicle]);
+
+    const handleImportSave = useCallback(async (vehicle: VehicleDefinition, file: File) => {
+        const saved = await saveImportedVehicle(vehicle, file);
+        const nextVehicles = [...VEHICLES, ...importedVehicles.filter((item) => item.id !== saved.id), saved];
+        const nextIndex = nextVehicles.findIndex((item) => item.id === saved.id);
+        setVehicleIndex(nextIndex >= 0 ? nextIndex : 0);
+        void AppStorage.savePrefs({ vehicleId: saved.id, levelId: selection.levelId, theme }).catch(() => undefined);
+    }, [importedVehicles, saveImportedVehicle, selection.levelId, theme]);
+
+    const handleImportDelete = useCallback(async (vehicle: VehicleDefinition) => {
+        await deleteImportedVehicle(vehicle);
+        if (selection.vehicleId !== vehicle.id) return;
+        setVehicleIndex(0);
+        void AppStorage.savePrefs({ vehicleId: VEHICLES[0].id, levelId: selection.levelId, theme }).catch(() => undefined);
+    }, [deleteImportedVehicle, selection.levelId, selection.vehicleId, theme]);
+
     const showSettings = phase === 'driving' && activeSelectionRef.current?.levelId === 'procedural';
 
     return (
@@ -312,7 +338,7 @@ export function App(): JSX.Element {
             <div id="game-container" />
             <div className="ui-layer" id="ui-layer">
                 {phase === 'loading' && <div id="loading" className="loader-overlay"><h3>INITIALIZING ENGINE</h3><div className="loader-bar"><div className="loader-progress" /></div></div>}
-                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} vehicleSettingsOpen={vehicleSettingsOpen} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={handleVehicleTransitionChange} onNavigateMenu={navigateMenu} />}
+                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} vehicles={vehicles} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} vehicleSettingsOpen={vehicleSettingsOpen} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={handleVehicleTransitionChange} onNavigateMenu={navigateMenu} onImportPreview={handleImportPreview} onImportSave={handleImportSave} onImportDelete={handleImportDelete} />}
                 {phase === 'driving' && <><button id="toggle-settings" className={`settings-toggle${showSettings ? '' : ' hidden'}`} type="button" aria-label="Ouvrir la configuration de piste" onClick={() => setSettingsOpen((open) => !open)}>⚙</button><Hud telemetry={telemetry} /><div id="pause-overlay" className={`menu-overlay${paused ? '' : ' hidden'}`}><h1>PAUSED</h1><div className="menu-grid"><button id="resume-game" className="cyber-btn" type="button" onClick={() => worldRef.current?.resume()}>RESUME</button><button id="back-to-menu" className="cyber-btn cyber-btn--danger" type="button" onClick={stopGame}>ABORT SESSION</button></div></div>{showSettings && <SettingsPanel active={settingsOpen} config={proceduralConfig} difficulty={proceduralDifficulty} pending={generationPending} favorites={favorites} onClose={() => setSettingsOpen(false)} onRegenerate={regenerateTrack} onDifficultyChange={changeDifficulty} onParameterChange={changeParameter} onSaveFavorite={saveFavorite} onLoadFavorite={loadFavorite} onDeleteFavorite={deleteFavorite} />}</>}
             </div>
         </>

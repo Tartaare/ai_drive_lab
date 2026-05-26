@@ -14,6 +14,7 @@ import {
     VehicleSetupRole,
     VEHICLE_SETUP_ROLES
 } from '../../vehicles/vehicleSetupTypes';
+import { VehicleImportPanel } from './VehicleImportPanel';
 
 type AssignmentMap = Partial<Record<VehicleSetupRole, VehicleSetupAssignment>>;
 
@@ -23,11 +24,14 @@ interface VehicleSettingsViewProps {
     transitionLocked: boolean;
     onVehicleChange: (direction: -1 | 1) => void;
     onClose: () => void;
-    onStatsSave: (vehicleId: string, overrides: Record<VehicleStatKey, number>) => void;
+    onStatsSave: (vehicleId: string, overrides: Record<VehicleStatKey, number>) => Promise<void>;
     onHighlightNodeIds: (nodeIds: string[]) => void;
+    onImportPreview: (vehicle: VehicleDefinition, file: File) => void;
+    onImportSave: (vehicle: VehicleDefinition, file: File) => Promise<void>;
+    onImportDelete: (vehicle: VehicleDefinition) => Promise<void>;
 }
 
-export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave, onHighlightNodeIds }: VehicleSettingsViewProps): JSX.Element {
+export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehicleChange, onClose, onStatsSave, onHighlightNodeIds, onImportPreview, onImportSave, onImportDelete }: VehicleSettingsViewProps): JSX.Element {
     const backButtonRef = useRef<HTMLButtonElement | null>(null);
     const statKeys = Object.keys(vehicle.stats) as VehicleStatKey[];
     const buildDraft = (): Record<VehicleStatKey, number> =>
@@ -224,9 +228,9 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                 </div>
             </section>
             <section className="vehicle-settings-panel vehicle-settings-panel--circuit" aria-labelledby="vehicle-settings-circuit-title">
-                <span className="showroom-kicker">Vehicle setup</span>
-                <h2 id="vehicle-settings-circuit-title">Circuit</h2>
-                <div className="vehicle-settings-panel__body" aria-hidden="true" />
+                <span className="showroom-kicker">Garage import</span>
+                <h2 id="vehicle-settings-circuit-title">3D Models</h2>
+                <VehicleImportPanel active={active} vehicle={vehicle} onPreview={onImportPreview} onSave={onImportSave} onDelete={onImportDelete} />
             </section>
             <div className="vehicle-settings-mini-selector">
                 <div className="vehicle-info__glass">
