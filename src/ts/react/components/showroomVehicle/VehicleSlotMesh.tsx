@@ -63,7 +63,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
 
     useEffect(() => {
         if (!mixer) return;
-        if (slot.role === 'active' && gltf.animations.length > 0) {
+        if (slot.role === 'active' && gltf.animations.length > 0 && !garageMode) {
             Object.values(actions).forEach((action) => {
                 if (!action) return;
                 action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
@@ -71,7 +71,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
         } else {
             Object.values(actions).forEach((action) => action?.stop());
         }
-    }, [slot.role, actions, mixer, gltf.animations.length]);
+    }, [slot.role, actions, mixer, gltf.animations.length, garageMode]);
 
     useEffect(() => {
         if (!mixer || gltf.animations.length === 0) return;
