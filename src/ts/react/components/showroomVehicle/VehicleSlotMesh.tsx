@@ -92,6 +92,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
             Object.values(actions).forEach((action) => {
                 if (!action) return;
                 action.setLoop(THREE.LoopRepeat, Infinity);
+                if (!action.isRunning()) action.reset().play();
             });
         }
     }, [garageMode, actions, mixer, gltf.animations.length]);
