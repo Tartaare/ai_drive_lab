@@ -22,6 +22,7 @@ interface ShowroomVehicleCanvasProps {
     adjacentVehicles: VehicleDefinition[];
     direction: -1 | 0 | 1;
     theme: ThemeName;
+    highlightedNodeIds: string[];
     onStatusChange: (message: string) => void;
     onTransitionChange: (locked: boolean) => void;
 }
@@ -147,7 +148,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
-                                    <VehicleSlotMesh slot={slot} rotationYRef={rotationYRef} onReady={() => props.onStatusChange('')} onDone={finishIncoming} />
+                                    <VehicleSlotMesh slot={slot} rotationYRef={rotationYRef} highlightedNodeIds={slot.role === 'active' ? props.highlightedNodeIds : []} onReady={() => props.onStatusChange('')} onDone={finishIncoming} />
                                 </VehicleSlotBoundary>
                             </Suspense>
                         ))}

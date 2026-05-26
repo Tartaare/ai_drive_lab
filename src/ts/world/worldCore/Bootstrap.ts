@@ -119,7 +119,7 @@ export function installBootstrap(World: any): void {
 			loader.load(path, (gltf: any) => {
 				
 				// AUTOMATIC SETUP HERE
-				VehicleSetup.prepareModel(gltf.scene);
+				VehicleSetup.prepareModel(gltf.scene, this.vehicleSetupConfig);
 
 				this.car = new SimpleCar(gltf);
 				// Debug de la surface au sol

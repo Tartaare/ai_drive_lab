@@ -3,7 +3,27 @@
 
 Nouvelle branche pour cette mission (respecte les règles).
 
-Dans le menu VehicleSettingsView, on va s'occuper des menus:
+Dans le menu VehicleSettingsView:
+
+
+2. Le menu de gauche doit servir à gérer la détection des éléments du véhicule.
+Dans notre app pour chaque véhicule on détecte déjà les parties du véhicule dont on a besoin avec "VehicleSetup.prepareModel(gltf.scene)".
+Dans ce menu on affichera donc: 
+  - La liste des éléments recherchés et pour chacun on mettra à coté l'élément détecté correspondant dans un bouton avec une liste déroulante. Ainsi si l'élément détecté ne correspond pas à celui recherché, le joueur pourra choisir l'élément qui correspond. 
+  - Pour une bonne UX, on mettra en avant l'élément choisi sur le modele 3D quand l'utilisateur survole le bouton associé à cet élément, ainsi il pourra voir visuellement ce qu'il a choisi.
+  - Gérer les groupes, pas seulement un mesh unique.
+  Une roue peut être composée de plusieurs meshes :
+  Tire_FL;
+  Rim_FL;
+  Donc pour chaque élément recherché, il faudrait pouvoir choisir: 1 mesh ou plusieurs meshes groupés.
+  - Afficher les conflits d’assignation: il faut empêcher qu’un même mesh soit assigné par erreur à plusieurs rôles incompatibles.
+
+
+
+===================== DONE =====================
+# commit / merge / push / ect. on veut un repo propre et à jour.
+
+
 
 1. Le menu de droite doit servir à importer des modeles 3D de véhicules (glb, gltf, etc.) que le joueur pourra utiliser dans le jeu.
 - Il faut que le joueur puisse soit drag and drop, soit cliquer sur un bouton pour importer un fichier. (Pense aux états d’import : chargement, validation, erreur, succès).
@@ -11,20 +31,6 @@ Dans le menu VehicleSettingsView, on va s'occuper des menus:
 - Afficher une checklist durant le processus d'importation.
 - Penser à la gestion des erreurs (Messages d’erreur exploitables).
 - Il faut pouvoir enregistrer le véhicule importé dans la base de données. Il faut aussi pouvoir supprimer un véhicule importé.
-- 
-
-2. Le menu de gauche doit servir à gérer la détection des éléments du véhicule.
-Dans notre app pour chaque véhicule on détecte déjà les parties du véhicule dont on a besoin avec "VehicleSetup.prepareModel(gltf.scene)". 
-- Dans ce menu on affichera donc: la liste des éléments recherchés et pour chacun on mettra à coté l'élément détecté correspondant dans un bouton avec une liste déroulante. Ainsi si l'élément détecté ne correspond pas à celui recherché, le joueur pourra choisir l'élément qui correspond. 
-- Pour une bonne UX, on mettra en avant l'élément choisi sur le modele 3D quand l'utilisateur survole le bouton associé à cet élément, ainsi il pourra voir visuellement ce qu'il a choisi.
-
-
-
-
-
-
-===================== DONE =====================
-# commit / merge / push / ect. on veut un repo propre et à jour.
 
 
 1. Autres modifications de ce panneau:

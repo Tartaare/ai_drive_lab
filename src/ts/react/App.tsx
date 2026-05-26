@@ -3,6 +3,7 @@ import { GAME_MODES, TRACKS, VEHICLES, DEFAULT_PROCEDURAL_CONFIG, GameModeDefini
 import { SceneDebugPanel } from '../ui/SceneDebugPanel';
 import { World } from '../main';
 import { TrackConfig } from '../world/ProceduralTrack';
+import { VehicleSetupConfig } from '../vehicles/vehicleSetupTypes';
 import * as AppStorage from '../core/AppStorage';
 import { Hud } from './components/Hud';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -39,6 +40,7 @@ export function App(): JSX.Element {
     const sessionStartRef = useRef(0);
     const activeSelectionRef = useRef<MainMenuSelection | null>(null);
     const persistTimerRef = useRef<number | null>(null);
+    const launchPendingRef = useRef(false);
 
     const selection = useMemo<MainMenuSelection>(() => {
         const vehicle = VEHICLES[vehicleIndex] || VEHICLES[0];
@@ -142,8 +144,15 @@ export function App(): JSX.Element {
         worldRef.current?.dispose();
     }, []);
 
-    const startGame = useCallback(() => {
-        if (!selection.isValid || phase === 'driving') return;
+    const startGame = useCallback(async () => {
+        if (!selection.isValid || phase === 'driving' || launchPendingRef.current) return;
+        launchPendingRef.current = true;
+        const storedSetup = await AppStorage.getVehicleSetup(selection.vehicleId);
+        const vehicleSetupConfig = storedSetup ? {
+            vehicleId: storedSetup.vehicleId,
+            assignments: storedSetup.assignments,
+            updatedAt: storedSetup.updatedAt
+        } as VehicleSetupConfig : null;
         debugPanelRef.current.destroy();
         previewRef.current?.setDebugOrbitMode(false);
         worldRef.current?.dispose();
@@ -151,8 +160,9 @@ export function App(): JSX.Element {
             proceduralSeed: selection.procedural.seed,
             proceduralDifficulty: selection.procedural.difficulty,
             proceduralConfig: selection.procedural.config,
+            vehicleSetupConfig,
             onPauseChange: setPaused
-        } : { onPauseChange: setPaused });
+        } : { vehicleSetupConfig, onPauseChange: setPaused });
         sessionStartRef.current = Date.now();
         activeSelectionRef.current = selection;
         setPaused(false);
@@ -161,6 +171,7 @@ export function App(): JSX.Element {
         navigateMenu('showroom');
         setPhase('driving');
         void AppStorage.savePrefs({ vehicleId: selection.vehicleId, levelId: selection.levelId, theme }).catch(() => undefined);
+        launchPendingRef.current = false;
     }, [navigateMenu, phase, selection, theme]);
 
     const stopGame = useCallback(() => {

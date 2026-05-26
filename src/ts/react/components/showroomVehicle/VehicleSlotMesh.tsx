@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Component, MutableRefObject, ReactNode, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { VehicleDefinition } from '../../../ui/menu/catalog';
+import { createVehicleNodeIndex } from '../../../vehicles/vehicleSetupInventory';
 import { easeInOutCubic } from './slotState';
 import { SWAP_DURATION_MS, VehicleSlot } from './types';
 import { createNormalizedVehicle } from './vehicleModel';
@@ -46,8 +47,9 @@ function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
     return { groupRef, modelRef };
 }
 
-export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone }: SlotAnimationProps & {
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlightedNodeIds = [] }: SlotAnimationProps & {
     onReady: () => void;
+    highlightedNodeIds?: string[];
 }): JSX.Element {
     const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
     const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
@@ -77,6 +79,46 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone }: SlotAni
     return (
         <group ref={groupRef}>
             <primitive ref={modelRef} object={model} />
+            <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />
+        </group>
+    );
+}
+
+function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
+    const groupRef = useRef<THREE.Group | null>(null);
+    const boxes = useMemo(() => {
+        const sourceRoot = model.children[0];
+        if (!sourceRoot || highlightedNodeIds.length === 0) return [];
+        model.updateMatrixWorld(true);
+        sourceRoot.updateMatrixWorld(true);
+        const nodeIndex = createVehicleNodeIndex(sourceRoot);
+        const inverse = model.matrixWorld.clone().invert();
+        return highlightedNodeIds.flatMap((nodeId) => {
+            const node = nodeIndex.get(nodeId);
+            if (!node) return [];
+            const worldBox = new THREE.Box3().setFromObject(node);
+            if (worldBox.isEmpty()) return [];
+            const center = new THREE.Vector3();
+            const size = new THREE.Vector3();
+            worldBox.getCenter(center).applyMatrix4(inverse);
+            worldBox.getSize(size);
+            return [{ id: nodeId, center, size }];
+        });
+    }, [highlightedNodeIds, model]);
+
+    useFrame(() => {
+        if (groupRef.current) groupRef.current.rotation.y = rotationYRef.current;
+    });
+
+    if (boxes.length === 0) return null;
+    return (
+        <group ref={groupRef} renderOrder={8}>
+            {boxes.map((box) => (
+                <mesh key={box.id} position={box.center}>
+                    <boxGeometry args={[Math.max(box.size.x, 0.02), Math.max(box.size.y, 0.02), Math.max(box.size.z, 0.02)]} />
+                    <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.82} depthTest={false} />
+                </mesh>
+            ))}
         </group>
     );
 }

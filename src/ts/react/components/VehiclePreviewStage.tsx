@@ -8,11 +8,12 @@ interface VehiclePreviewStageProps {
     adjacentVehicles: VehicleDefinition[];
     direction: -1 | 0 | 1;
     theme: ThemeName;
+    highlightedNodeIds: string[];
     previewRef: MutableRefObject<ShowroomVehicleHandle | null>;
     onTransitionChange: (locked: boolean) => void;
 }
 
-export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, theme, previewRef, onTransitionChange }: VehiclePreviewStageProps): JSX.Element {
+export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, theme, highlightedNodeIds, previewRef, onTransitionChange }: VehiclePreviewStageProps): JSX.Element {
     const [status, setStatus] = useState('');
 
     return (
@@ -23,6 +24,7 @@ export function VehiclePreviewStage({ vehicle, adjacentVehicles, direction, them
                 adjacentVehicles={adjacentVehicles}
                 direction={direction}
                 theme={theme}
+                highlightedNodeIds={highlightedNodeIds}
                 onStatusChange={setStatus}
                 onTransitionChange={onTransitionChange}
             />
