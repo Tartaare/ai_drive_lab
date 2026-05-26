@@ -76,7 +76,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
     useEffect(() => {
         if (!mixer || gltf.animations.length === 0) return;
         if (garageMode) {
-            mixer.timeScale = 5;
+            mixer.timeScale = 4;
             const onFinished = (): void => {
                 mixer.timeScale = 1;
                 mixer.stopAllAction();
@@ -100,6 +100,54 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
     useFrame((_, delta) => {
         mixer?.update(delta);
     });
+
+    useEffect(() => {
+        const sourceRoot = model.children[0];
+        if (!sourceRoot) return;
+        const nodeIndex = createVehicleNodeIndex(sourceRoot);
+        const isHighlighting = highlightedNodeIds.length > 0;
+
+        const highlightedMeshIds = new Set<string>();
+        if (isHighlighting) {
+            highlightedNodeIds.forEach((nodeId) => {
+                const node = nodeIndex.get(nodeId);
+                node?.traverse((child) => {
+                    if ((child as THREE.Mesh).isMesh) highlightedMeshIds.add(child.uuid);
+                });
+            });
+        }
+
+        sourceRoot.traverse((child) => {
+            const mesh = child as THREE.Mesh;
+            if (!mesh.isMesh) return;
+            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            materials.forEach((mat) => {
+                const m = mat as THREE.MeshStandardMaterial;
+                if (isHighlighting && !highlightedMeshIds.has(mesh.uuid)) {
+                    m.transparent = true;
+                    m.opacity = 0.1;
+                } else {
+                    m.transparent = false;
+                    m.opacity = 1;
+                }
+                m.needsUpdate = true;
+            });
+        });
+
+        return () => {
+            sourceRoot.traverse((child) => {
+                const mesh = child as THREE.Mesh;
+                if (!mesh.isMesh) return;
+                const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                materials.forEach((mat) => {
+                    const m = mat as THREE.MeshStandardMaterial;
+                    m.transparent = false;
+                    m.opacity = 1;
+                    m.needsUpdate = true;
+                });
+            });
+        };
+    }, [highlightedNodeIds, model]);
 
     return (
         <group ref={groupRef}>
