@@ -45,6 +45,7 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
     const [setupSaving, setSetupSaving] = useState(false);
     const [setupStatus, setSetupStatus] = useState('Chargement du modèle...');
     const [openRole, setOpenRole] = useState<VehicleSetupRole | null>(null);
+    const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
     const statsKey = JSON.stringify(
         (Object.keys(vehicle.stats) as VehicleStatKey[]).map((k) => vehicle.stats[k].value)
@@ -114,6 +115,17 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
 
     const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
     const selectableNodes = useMemo(() => nodes.filter((node) => node.id !== 'root'), [nodes]);
+    const childrenByParentId = useMemo(() => {
+        const map = new Map<string, VehicleSetupNode[]>();
+        selectableNodes.forEach((node) => {
+            const parentId = node.id.includes('/') ? node.id.slice(0, node.id.lastIndexOf('/')) : 'root';
+            map.set(parentId, [...(map.get(parentId) ?? []), node]);
+        });
+        return map;
+    }, [selectableNodes]);
+    const rootNodes = useMemo(() => childrenByParentId.get('root') ?? [], [childrenByParentId]);
+    const toggleTreeNode = (nodeId: string): void =>
+        setExpandedNodes((prev) => { const next = new Set(prev); next.has(nodeId) ? next.delete(nodeId) : next.add(nodeId); return next; });
 
     const handleSlider = (key: VehicleStatKey, raw: string): void => {
         setDraft((prev) => ({ ...prev, [key]: Number(raw) }));
@@ -200,26 +212,7 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                                     <div className="vehicle-setup-dropdown">
                                         <button className="vehicle-setup-clear" type="button" tabIndex={active ? 0 : -1} onClick={() => clearRole(role.id)}>Auto / aucun mesh</button>
                                         <div className="vehicle-setup-options">
-                                            {selectableNodes.map((node) => (
-                                                <label
-                                                    className="vehicle-setup-option"
-                                                    key={node.id}
-                                                    style={{ paddingLeft: `${0.65 + Math.min(node.depth, 5) * 0.45}rem` }}
-                                                    onMouseEnter={() => onHighlightNodeIds([node.id])}
-                                                    onMouseLeave={() => onHighlightNodeIds(assignments[role.id]?.nodeIds ?? [])}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selected.includes(node.id)}
-                                                        tabIndex={active ? 0 : -1}
-                                                        onChange={() => toggleNode(role.id, node.id)}
-                                                        onFocus={() => onHighlightNodeIds([node.id])}
-                                                        onBlur={() => onHighlightNodeIds(assignments[role.id]?.nodeIds ?? [])}
-                                                    />
-                                                    <span>{node.name}</span>
-                                                    <small>{node.isMesh ? 'mesh' : `${node.meshNodeIds.length} meshes`}</small>
-                                                </label>
-                                            ))}
+                                            {renderTreeNodes(rootNodes, childrenByParentId, expandedNodes, toggleTreeNode, selected, active, role.id, assignments, onHighlightNodeIds, toggleNode)}
                                         </div>
                                     </div>
                                 )}
@@ -260,6 +253,59 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
             </div>
         </div>
     );
+}
+
+function renderTreeNodes(
+    nodes: VehicleSetupNode[],
+    childrenByParentId: Map<string, VehicleSetupNode[]>,
+    expandedNodes: Set<string>,
+    toggleExpand: (id: string) => void,
+    selected: string[],
+    active: boolean,
+    roleId: VehicleSetupRole,
+    assignments: AssignmentMap,
+    onHighlightNodeIds: (ids: string[]) => void,
+    toggleNode: (role: VehicleSetupRole, nodeId: string) => void
+): JSX.Element[] {
+    const result: JSX.Element[] = [];
+    function renderNode(node: VehicleSetupNode): void {
+        const children = childrenByParentId.get(node.id) ?? [];
+        const hasChildren = children.length > 0;
+        const isOpen = expandedNodes.has(node.id);
+        const indent = `${0.4 + Math.min(node.depth - 1, 5) * 0.55}rem`;
+        result.push(
+            <label
+                className={`vehicle-setup-option${hasChildren ? ' has-children' : ''}${isOpen ? ' is-open' : ''}`}
+                key={node.id}
+                style={{ paddingLeft: indent }}
+                onMouseEnter={() => onHighlightNodeIds([node.id])}
+                onMouseLeave={() => onHighlightNodeIds(assignments[roleId]?.nodeIds ?? [])}
+            >
+                {hasChildren && (
+                    <button
+                        className='vehicle-setup-tree-toggle'
+                        type='button'
+                        tabIndex={active ? 0 : -1}
+                        aria-label={isOpen ? 'Replier' : 'Déplier'}
+                        onClick={(e) => { e.preventDefault(); toggleExpand(node.id); }}
+                    />
+                )}
+                <input
+                    type='checkbox'
+                    checked={selected.includes(node.id)}
+                    tabIndex={active ? 0 : -1}
+                    onChange={() => toggleNode(roleId, node.id)}
+                    onFocus={() => onHighlightNodeIds([node.id])}
+                    onBlur={() => onHighlightNodeIds(assignments[roleId]?.nodeIds ?? [])}
+                />
+                <span>{node.name}</span>
+                <small>{node.isMesh ? 'mesh' : `${node.meshNodeIds.length} meshes`}</small>
+            </label>
+        );
+        if (hasChildren && isOpen) children.forEach(renderNode);
+    }
+    nodes.forEach(renderNode);
+    return result;
 }
 
 function mergeAssignments(autoAssignments: AssignmentMap, savedAssignments: AssignmentMap): AssignmentMap {

@@ -117,12 +117,17 @@
 .vehicle-setup-option {
     min-height: 34px;
     display: grid;
-    grid-template-columns: 16px minmax(0, 1fr) auto;
-    gap: 0.55rem;
+    grid-template-columns: 16px 16px minmax(0, 1fr) auto;
+    gap: 0.45rem;
     align-items: center;
     padding: 0.4rem 0.65rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.055);
     cursor: pointer;
+}
+
+.vehicle-setup-option:not(.has-children) .vehicle-setup-tree-toggle {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .vehicle-setup-option:hover {
@@ -131,6 +136,40 @@
 
 .vehicle-setup-option input {
     accent-color: var(--c-motorsport);
+}
+
+.vehicle-setup-tree-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    color: var(--c-text-muted);
+    flex-shrink: 0;
+}
+
+.vehicle-setup-tree-toggle::before {
+    content: '';
+    display: block;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 4px 0 4px 6px;
+    border-color: transparent transparent transparent currentColor;
+    transition: transform 0.15s var(--ease-smooth);
+    transform: rotate(0deg);
+}
+
+.vehicle-setup-option.is-open > .vehicle-setup-tree-toggle::before {
+    transform: rotate(90deg);
+}
+
+.vehicle-setup-tree-toggle:hover::before {
+    color: var(--c-text);
 }
 
 .vehicle-setup-option span {
