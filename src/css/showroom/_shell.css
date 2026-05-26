@@ -152,6 +152,44 @@
     transition-delay: 0s;
 }
 
+.vehicle-settings-back-row {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    pointer-events: auto;
+    z-index: 5;
+}
+
+.vehicle-settings-back {
+    min-height: 44px;
+    padding: 0.6rem 1.5rem;
+    border: 1px solid var(--c-border-subtle);
+    background: rgba(255, 255, 255, 0.018);
+    color: var(--c-text);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition:
+        transform 0.15s var(--ease-smooth),
+        border-color 0.2s var(--ease-smooth),
+        background 0.2s var(--ease-smooth),
+        color 0.2s var(--ease-smooth);
+}
+
+.vehicle-settings-back:hover {
+    border-color: var(--c-motorsport-soft);
+    background: var(--c-motorsport-dim);
+    color: var(--c-motorsport);
+}
+
+.vehicle-settings-back:active {
+    transform: scale(0.97);
+}
+
 .vehicle-settings-panel {
     position: relative;
     z-index: 4;
@@ -197,13 +235,6 @@
     margin-bottom: 1.2rem;
 }
 
-.vehicle-settings-panel__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
 .vehicle-settings-panel__body {
     min-height: 244px;
     border: 1px solid var(--c-panel-bevel);
@@ -212,32 +243,159 @@
         rgba(0, 0, 0, 0.14);
 }
 
-.vehicle-settings-close {
-    width: 40px;
-    height: 40px;
-    display: inline-grid;
-    place-items: center;
-    border: 1px solid var(--c-border-subtle);
-    background: rgba(255, 255, 255, 0.018);
-    color: var(--c-text);
+.vehicle-settings-stats__sliders {
+    width: min(680px, 100%);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+    margin-top: 0.9rem;
+    justify-self: center;
+}
+
+.stat-slider {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+        "label label"
+        "meter score";
+    gap: 0.28rem 0.7rem;
+    align-items: center;
+}
+
+.stat-slider__label {
+    grid-area: label;
+    font-size: 0.58rem;
+    color: var(--c-text-muted);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    line-height: 1.1;
+}
+
+.stat-slider__value {
+    grid-area: score;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    justify-self: end;
+    color: var(--c-motorsport);
+}
+
+.stat-slider__input {
+    grid-area: meter;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    background: var(--c-border-subtle);
+    border-radius: 0;
+    outline: none;
     cursor: pointer;
-    pointer-events: auto;
-    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-    transition: transform 0.2s var(--ease-smooth), border-color 0.25s var(--ease-smooth), background 0.25s var(--ease-smooth);
+    padding: 6px 0;
+    box-sizing: content-box;
+    background-clip: content-box;
 }
 
-.vehicle-settings-close:hover {
+.stat-slider__input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 1px;
+    background: var(--c-text-muted);
+    border: 2px solid var(--c-bg-elevated);
+    transform: rotate(45deg);
+    box-shadow: 0 0 0 1px var(--c-border-subtle);
+    transition: background 0.15s var(--ease-smooth), box-shadow 0.15s var(--ease-smooth);
+}
+
+.stat-slider__input::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 1px;
+    background: var(--c-text-muted);
+    border: 2px solid var(--c-bg-elevated);
+    transform: rotate(45deg);
+    box-shadow: 0 0 0 1px var(--c-border-subtle);
+    cursor: pointer;
+    transition: background 0.15s var(--ease-smooth), box-shadow 0.15s var(--ease-smooth);
+}
+
+.stat-slider__input:active::-webkit-slider-thumb {
+    background: var(--c-motorsport);
+    box-shadow: 0 0 10px var(--c-motorsport-glow), 0 0 0 1px var(--c-motorsport-soft);
+}
+
+.stat-slider__input:active::-moz-range-thumb {
+    background: var(--c-motorsport);
+    box-shadow: 0 0 10px var(--c-motorsport-glow), 0 0 0 1px var(--c-motorsport-soft);
+}
+
+.vehicle-settings-stats__actions {
+    display: flex;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    margin-top: 0.5rem;
+}
+
+.vehicle-settings-action {
+    flex: 1;
+    min-height: 44px;
+    padding: 0.6rem 1.5rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--c-border-subtle);
+    cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition:
+        background 0.2s var(--ease-smooth),
+        border-color 0.2s var(--ease-smooth),
+        color 0.2s var(--ease-smooth),
+        transform 0.15s var(--ease-smooth);
+}
+
+.vehicle-settings-action:disabled {
+    opacity: 0.3;
+    cursor: default;
+    pointer-events: none;
+}
+
+.vehicle-settings-action:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.vehicle-settings-action--cancel {
+    background: transparent;
+    color: var(--c-text-muted);
+}
+
+.vehicle-settings-action--cancel:hover:not(:disabled) {
     border-color: var(--c-border-strong);
-    background: rgba(255, 255, 255, 0.05);
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.04);
 }
 
-.vehicle-settings-close:active {
-    transform: scale(0.94);
+.vehicle-settings-action--save {
+    background: var(--c-motorsport-dim);
+    border-color: var(--c-motorsport-soft);
+    color: var(--c-motorsport);
+}
+
+.vehicle-settings-action--save:hover:not(:disabled) {
+    background: var(--c-motorsport);
+    border-color: var(--c-motorsport);
+    color: #000;
 }
 
 .vehicle-settings-mini-selector {
     grid-column: 2;
     align-self: end;
+    justify-self: center;
+    width: min(740px, calc(100vw - 3rem));
     padding-bottom: 0.5rem;
     opacity: 0;
     transform: translateY(12px);
@@ -245,6 +403,10 @@
     transition:
         opacity 0.52s var(--ease-smooth) 0.08s,
         transform 0.52s var(--ease-smooth) 0.08s;
+}
+
+.vehicle-settings-mini-selector .vehicle-selector {
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
 }
 
 .vehicle-settings-view.is-active .vehicle-settings-mini-selector {

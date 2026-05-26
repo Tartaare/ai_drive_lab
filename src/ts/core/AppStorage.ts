@@ -28,6 +28,10 @@ export interface SavedCircuit {
     createdAt: number;
 }
 
+export type VehicleStatsOverride = Record<string, number>;
+
+// ─── Sessions ──────────────────────────────────────────────────────────────────
+
 export interface Session {
     id?: number;
     circuitId: string;
@@ -40,7 +44,7 @@ export interface Session {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DB_NAME = 'apex-racing-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const MAX_SESSIONS = 50;
 const MAX_FAVORITES = 10;
 
@@ -48,6 +52,7 @@ const STORE_PREFS = 'user-prefs';
 const STORE_TRACK = 'track-config';
 const STORE_CIRCUITS = 'saved-circuits';
 const STORE_SESSIONS = 'sessions';
+const STORE_VEHICLE_STATS = 'vehicle-stats';
 
 const SINGLETON_KEY = 'singleton';
 
@@ -72,6 +77,9 @@ async function getDB(): Promise<any> {
                 }
                 if (!db.objectStoreNames.contains(STORE_SESSIONS)) {
                     db.createObjectStore(STORE_SESSIONS, { autoIncrement: true, keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains(STORE_VEHICLE_STATS)) {
+                    db.createObjectStore(STORE_VEHICLE_STATS);
                 }
             },
         });
@@ -151,6 +159,26 @@ export async function deleteCircuit(id: number): Promise<void> {
     if (!db) return;
     try {
         await db.delete(STORE_CIRCUITS, id);
+    } catch { /* silently degrade */ }
+}
+
+// ─── Vehicle Stats Overrides ──────────────────────────────────────────────────
+
+export async function getVehicleStats(vehicleId: string): Promise<VehicleStatsOverride | null> {
+    const db = await getDB();
+    if (!db) return null;
+    try {
+        return (await db.get(STORE_VEHICLE_STATS, vehicleId)) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export async function saveVehicleStats(vehicleId: string, overrides: VehicleStatsOverride): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        await db.put(STORE_VEHICLE_STATS, overrides, vehicleId);
     } catch { /* silently degrade */ }
 }
 
