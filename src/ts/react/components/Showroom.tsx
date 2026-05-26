@@ -101,7 +101,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                     </div>
                 </section>
                 <section className="showroom-vehicle" aria-labelledby="showroom-vehicle-name">
-                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} highlightedNodeIds={highlightedVehicleNodeIds} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
+                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} highlightedNodeIds={highlightedVehicleNodeIds} garageMode={vehicleSettingsOpen} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
                     <div className="vehicle-info" aria-hidden={vehicleSettingsOpen}>
                         <div className="vehicle-info__glass">
                             <div className="vehicle-selector">

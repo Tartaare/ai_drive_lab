@@ -47,9 +47,10 @@ function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
     return { groupRef, modelRef };
 }
 
-export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlightedNodeIds = [] }: SlotAnimationProps & {
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlightedNodeIds = [], garageMode = false }: SlotAnimationProps & {
     onReady: () => void;
     highlightedNodeIds?: string[];
+    garageMode?: boolean;
 }): JSX.Element {
     const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
     const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
@@ -71,6 +72,29 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
             Object.values(actions).forEach((action) => action?.stop());
         }
     }, [slot.role, actions, mixer, gltf.animations.length]);
+
+    useEffect(() => {
+        if (!mixer || gltf.animations.length === 0) return;
+        if (garageMode) {
+            mixer.timeScale = 5;
+            const onFinished = (): void => {
+                mixer.timeScale = 1;
+                mixer.stopAllAction();
+            };
+            mixer.addEventListener('finished', onFinished);
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.setLoop(THREE.LoopOnce, 1).clampWhenFinished = true;
+            });
+            return () => mixer.removeEventListener('finished', onFinished);
+        } else {
+            mixer.timeScale = 1;
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.setLoop(THREE.LoopRepeat, Infinity);
+            });
+        }
+    }, [garageMode, actions, mixer, gltf.animations.length]);
 
     useFrame((_, delta) => {
         mixer?.update(delta);

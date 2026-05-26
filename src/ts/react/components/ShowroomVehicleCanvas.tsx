@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { forwardRef, Suspense, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ForwardedRef, forwardRef, Suspense, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { SceneDebugSource, SoftShadowsSource } from '../../ui/SceneDebugPanel';
 import { VehicleDefinition } from '../../ui/menu/catalog';
@@ -23,12 +23,13 @@ interface ShowroomVehicleCanvasProps {
     direction: -1 | 0 | 1;
     theme: ThemeName;
     highlightedNodeIds: string[];
+    garageMode?: boolean;
     onStatusChange: (message: string) => void;
     onTransitionChange: (locked: boolean) => void;
 }
 
 export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomVehicleCanvasProps>(
-    function ShowroomVehicleCanvas(props, ref): JSX.Element {
+    function ShowroomVehicleCanvas({ garageMode = false, ...props }: ShowroomVehicleCanvasProps, ref: ForwardedRef<ShowroomVehicleHandle>): JSX.Element {
         const [slots, setSlots] = useState<VehicleSlot[]>(() => [createSlot(props.vehicle, 'active', 0)]);
         const activeVehicleRef = useRef(props.vehicle);
         const sceneRefsRef = useRef<SceneRefs | null>(null);
@@ -148,7 +149,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
-                                    <VehicleSlotMesh slot={slot} rotationYRef={rotationYRef} highlightedNodeIds={slot.role === 'active' ? props.highlightedNodeIds : []} onReady={() => props.onStatusChange('')} onDone={finishIncoming} />
+                                    <VehicleSlotMesh slot={slot} rotationYRef={rotationYRef} highlightedNodeIds={slot.role === 'active' ? props.highlightedNodeIds : []} garageMode={garageMode} onReady={() => props.onStatusChange('')} onDone={finishIncoming} />
                                 </VehicleSlotBoundary>
                             </Suspense>
                         ))}
