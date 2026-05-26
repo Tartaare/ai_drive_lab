@@ -1,6 +1,8 @@
 import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { forwardRef, Suspense, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ForwardedRef, forwardRef, Suspense, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React from 'react';
+import { getVehicleNodeId } from '../../vehicles/vehicleSetupInventory';
 import * as THREE from 'three';
 import { SceneDebugSource, SoftShadowsSource } from '../../ui/SceneDebugPanel';
 import { VehicleDefinition } from '../../ui/menu/catalog';
@@ -23,12 +25,15 @@ interface ShowroomVehicleCanvasProps {
     direction: -1 | 0 | 1;
     theme: ThemeName;
     highlightedNodeIds: string[];
+    garageMode?: boolean;
+    pickingMode?: boolean;
+    onNodePicked?: (nodeId: string) => void;
     onStatusChange: (message: string) => void;
     onTransitionChange: (locked: boolean) => void;
 }
 
 export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomVehicleCanvasProps>(
-    function ShowroomVehicleCanvas(props, ref): JSX.Element {
+    function ShowroomVehicleCanvas({ garageMode = false, pickingMode = false, onNodePicked, ...props }: ShowroomVehicleCanvasProps, ref: ForwardedRef<ShowroomVehicleHandle>): JSX.Element {
         const [slots, setSlots] = useState<VehicleSlot[]>(() => [createSlot(props.vehicle, 'active', 0)]);
         const activeVehicleRef = useRef(props.vehicle);
         const sceneRefsRef = useRef<SceneRefs | null>(null);
@@ -37,6 +42,10 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         const envPresetRef = useRef('city');
         const setEnvPresetRef = useRef<((preset: string) => void) | null>(null);
         const setEnvEnabledRef = useRef<((enabled: boolean) => void) | null>(null);
+        const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+        const activeModelRootRef = useRef<THREE.Object3D | null>(null);
+        const pickingModeRef = useRef(pickingMode);
+        const onNodePickedRef = useRef(onNodePicked);
         const debugOrbitRef = useRef(false);
         const rotationYRef = useRef(0);
         const cameraDistanceRef = useRef(1);
@@ -46,6 +55,41 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         const showroomCameraRef = useRef<ShowroomCameraConfig>({ radius: 20, elevation: 16, lookAtY: 0.1, fov: 15 });
         const reduceMotion = useReducedMotion();
         const containerRef = useRef<HTMLDivElement>(null);
+        useEffect(() => {
+            pickingModeRef.current = pickingMode;
+            if (!pickingMode) setHoveredNodeId(null);
+        }, [pickingMode]);
+        useEffect(() => { onNodePickedRef.current = onNodePicked; }, [onNodePicked]);
+
+        const raycastNode = useCallback((clientX: number, clientY: number): string | null => {
+            if (!sceneRefsRef.current || !activeModelRootRef.current) return null;
+            const { renderer, camera } = sceneRefsRef.current;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+            const meshes: THREE.Mesh[] = [];
+            activeModelRootRef.current.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) meshes.push(child as THREE.Mesh);
+            });
+            const hits = raycaster.intersectObjects(meshes, false);
+            if (hits.length === 0) return null;
+            return getVehicleNodeId(hits[0].object, activeModelRootRef.current);
+        }, []);
+
+        const handlePickHover = useCallback((event: React.PointerEvent<HTMLDivElement>): void => {
+            if (!pickingModeRef.current) return;
+            const nodeId = raycastNode(event.clientX, event.clientY);
+            setHoveredNodeId((prev) => prev === nodeId ? prev : nodeId);
+        }, [raycastNode]);
+
+        const handlePickClick = useCallback((event: React.PointerEvent<HTMLDivElement>): void => {
+            if (!pickingModeRef.current) return;
+            const nodeId = raycastNode(event.clientX, event.clientY);
+            if (nodeId) onNodePickedRef.current?.(nodeId);
+        }, [raycastNode]);
+
         const controls = useShowroomVehicleControls({
             containerRef,
             debugOrbitRef,
@@ -133,7 +177,7 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
         };
 
         return (
-            <div ref={containerRef} className="vehicle-stage__r3f" role="application" tabIndex={0} aria-label="Prévisualisation 3D du véhicule" onPointerDown={controls.handlePointerDown} onPointerMove={controls.handlePointerMove} onPointerUp={controls.handlePointerUp} onPointerCancel={controls.handlePointerUp} onKeyDown={controls.handleKeyDown}>
+            <div ref={containerRef} className={`vehicle-stage__r3f${pickingMode ? ' is-picking' : ''}`} role="application" tabIndex={0} aria-label="Prévisualisation 3D du véhicule" onPointerDown={controls.handlePointerDown} onPointerMove={(e) => { controls.handlePointerMove(e); handlePickHover(e); }} onPointerUp={controls.handlePointerUp} onPointerCancel={controls.handlePointerUp} onKeyDown={controls.handleKeyDown} onClick={handlePickClick} onPointerLeave={() => { if (pickingMode) setHoveredNodeId(null); }}>
                 <Canvas
                     className="vehicle-stage__canvas"
                     dpr={[1, 1.5]}
@@ -148,7 +192,17 @@ export const ShowroomVehicleCanvas = forwardRef<ShowroomVehicleHandle, ShowroomV
                         {slots.map((slot) => (
                             <Suspense key={slot.key} fallback={null}>
                                 <VehicleSlotBoundary slot={slot} rotationYRef={rotationYRef} onDone={finishIncoming} onError={() => props.onStatusChange('Modèle indisponible')}>
-                                    <VehicleSlotMesh slot={slot} rotationYRef={rotationYRef} highlightedNodeIds={slot.role === 'active' ? props.highlightedNodeIds : []} onReady={() => props.onStatusChange('')} onDone={finishIncoming} />
+                                    <VehicleSlotMesh
+                                        slot={slot}
+                                        rotationYRef={rotationYRef}
+                                        highlightedNodeIds={slot.role === 'active' ? props.highlightedNodeIds : []}
+                                        garageMode={garageMode}
+                                        onReady={() => props.onStatusChange('')}
+                                        onDone={finishIncoming}
+                                        onModelReady={slot.role === 'active' ? (root) => { activeModelRootRef.current = root; } : undefined}
+                                        hoveredNodeId={slot.role === 'active' ? hoveredNodeId : null}
+                                        pickingMode={slot.role === 'active' ? pickingMode : false}
+                                    />
                                 </VehicleSlotBoundary>
                             </Suspense>
                         ))}

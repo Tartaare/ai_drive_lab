@@ -1,6 +1,6 @@
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Component, MutableRefObject, ReactNode, useEffect, useMemo, useRef } from 'react';
+import { Component, MutableRefObject, ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { VehicleDefinition } from '../../../ui/menu/catalog';
 import { createVehicleNodeIndex } from '../../../vehicles/vehicleSetupInventory';
@@ -47,9 +47,13 @@ function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
     return { groupRef, modelRef };
 }
 
-export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlightedNodeIds = [] }: SlotAnimationProps & {
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelReady, highlightedNodeIds = [], hoveredNodeId = null, garageMode = false, pickingMode = false }: SlotAnimationProps & {
     onReady: () => void;
+    onModelReady?: (root: THREE.Object3D | null) => void;
     highlightedNodeIds?: string[];
+    hoveredNodeId?: string | null;
+    garageMode?: boolean;
+    pickingMode?: boolean;
 }): JSX.Element {
     const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
     const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
@@ -61,8 +65,14 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
     }, [onReady]);
 
     useEffect(() => {
+        const sourceRoot = model.children[0] ?? null;
+        onModelReady?.(sourceRoot);
+        return () => onModelReady?.(null);
+    }, [model, onModelReady]);
+
+    useEffect(() => {
         if (!mixer) return;
-        if (slot.role === 'active' && gltf.animations.length > 0) {
+        if (slot.role === 'active' && gltf.animations.length > 0 && !garageMode) {
             Object.values(actions).forEach((action) => {
                 if (!action) return;
                 action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
@@ -70,30 +80,95 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
         } else {
             Object.values(actions).forEach((action) => action?.stop());
         }
-    }, [slot.role, actions, mixer, gltf.animations.length]);
+    }, [slot.role, actions, mixer, gltf.animations.length, garageMode]);
+
+    useEffect(() => {
+        if (!mixer || gltf.animations.length === 0) return;
+        if (garageMode) {
+            mixer.timeScale = 4;
+            const onFinished = (): void => {
+                mixer.timeScale = 1;
+                mixer.stopAllAction();
+            };
+            mixer.addEventListener('finished', onFinished);
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.setLoop(THREE.LoopOnce, 1).clampWhenFinished = true;
+            });
+            return () => mixer.removeEventListener('finished', onFinished);
+        } else {
+            mixer.timeScale = 1;
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.setLoop(THREE.LoopRepeat, Infinity);
+                if (!action.isRunning()) action.reset().play();
+            });
+        }
+    }, [garageMode, actions, mixer, gltf.animations.length]);
 
     useFrame((_, delta) => {
         mixer?.update(delta);
     });
 
+    useEffect(() => {
+        if (pickingMode) return;
+        const sourceRoot = model.children[0];
+        if (!sourceRoot) return;
+
+        if (highlightedNodeIds.length === 0) return;
+
+        const nodeIndex = createVehicleNodeIndex(sourceRoot);
+        const highlightedMeshIds = new Set<string>();
+        highlightedNodeIds.forEach((nodeId) => {
+            const node = nodeIndex.get(nodeId);
+            node?.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) highlightedMeshIds.add(child.uuid);
+            });
+        });
+
+        const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+
+        sourceRoot.traverse((child) => {
+            const mesh = child as THREE.Mesh;
+            if (!mesh.isMesh || highlightedMeshIds.has(mesh.uuid)) return;
+            originalMaterials.set(mesh, mesh.material);
+            const cloned = Array.isArray(mesh.material)
+                ? mesh.material.map((m) => { const c = m.clone(); c.transparent = true; (c as THREE.MeshStandardMaterial).opacity = 0.1; return c; })
+                : (() => { const c = mesh.material.clone(); c.transparent = true; (c as THREE.MeshStandardMaterial).opacity = 0.1; return c; })();
+            mesh.material = cloned;
+        });
+
+        return () => {
+            originalMaterials.forEach((original, mesh) => {
+                if (Array.isArray(mesh.material)) mesh.material.forEach((m) => m.dispose());
+                else mesh.material.dispose();
+                mesh.material = original;
+            });
+        };
+    }, [highlightedNodeIds, pickingMode, model]);
+
     return (
         <group ref={groupRef}>
             <primitive ref={modelRef} object={model} />
-            <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />
+            <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} hoveredNodeId={pickingMode ? hoveredNodeId : null} rotationYRef={rotationYRef} />
+            {pickingMode && <VehiclePickOutlines model={model} hoveredNodeId={hoveredNodeId} selectedNodeIds={highlightedNodeIds} />}
         </group>
     );
 }
 
-function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
+export type { SlotAnimationProps };
+
+function VehicleHighlightBoxes({ model, highlightedNodeIds, hoveredNodeId, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; hoveredNodeId?: string | null; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
     const groupRef = useRef<THREE.Group | null>(null);
     const boxes = useMemo(() => {
         const sourceRoot = model.children[0];
-        if (!sourceRoot || highlightedNodeIds.length === 0) return [];
+        const allIds = [...new Set([...highlightedNodeIds, ...(hoveredNodeId ? [hoveredNodeId] : [])])];
+        if (!sourceRoot || allIds.length === 0) return [];
         model.updateMatrixWorld(true);
         sourceRoot.updateMatrixWorld(true);
         const nodeIndex = createVehicleNodeIndex(sourceRoot);
         const inverse = model.matrixWorld.clone().invert();
-        return highlightedNodeIds.flatMap((nodeId) => {
+        return allIds.flatMap((nodeId) => {
             const node = nodeIndex.get(nodeId);
             if (!node) return [];
             const worldBox = new THREE.Box3().setFromObject(node);
@@ -104,7 +179,7 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
             worldBox.getSize(size);
             return [{ id: nodeId, center, size }];
         });
-    }, [highlightedNodeIds, model]);
+    }, [highlightedNodeIds, hoveredNodeId, model]);
 
     useFrame(() => {
         if (groupRef.current) groupRef.current.rotation.y = rotationYRef.current;
@@ -116,11 +191,68 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
             {boxes.map((box) => (
                 <mesh key={box.id} position={box.center}>
                     <boxGeometry args={[Math.max(box.size.x, 0.02), Math.max(box.size.y, 0.02), Math.max(box.size.z, 0.02)]} />
-                    <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.82} depthTest={false} />
+                    <meshBasicMaterial color="#00e5ff" wireframe transparent opacity={0.75} depthTest={false} />
                 </mesh>
             ))}
         </group>
     );
+}
+
+function VehiclePickOutlines({ model, hoveredNodeId, selectedNodeIds }: {
+    model: THREE.Group;
+    hoveredNodeId: string | null;
+    selectedNodeIds: string[];
+}): null {
+    const sourceRoot = model.children[0];
+    const nodeIndex = useMemo(
+        () => sourceRoot ? createVehicleNodeIndex(sourceRoot) : new Map<string, THREE.Object3D>(),
+        [sourceRoot]
+    );
+
+    const getMeshes = (nodeId: string): THREE.Mesh[] => {
+        const node = nodeIndex.get(nodeId);
+        if (!node) return [];
+        const meshes: THREE.Mesh[] = [];
+        node.traverse((child) => { if ((child as THREE.Mesh).isMesh) meshes.push(child as THREE.Mesh); });
+        return meshes;
+    };
+
+    useLayoutEffect(() => {
+        const outlinesByMesh = new Map<THREE.Mesh, THREE.Mesh>();
+
+        const addOutline = (mesh: THREE.Mesh, color: string, thickness: number): void => {
+            if (outlinesByMesh.has(mesh)) return;
+            const outlineMesh = new THREE.Mesh(mesh.geometry);
+            outlineMesh.renderOrder = 9;
+            const mat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color(color),
+                side: THREE.BackSide,
+                transparent: true,
+                depthTest: false,
+            });
+            outlineMesh.material = mat;
+            outlineMesh.onBeforeRender = () => {
+                outlineMesh.matrixWorld.copy(mesh.matrixWorld);
+            };
+            const scale = 1 + thickness;
+            outlineMesh.scale.set(scale, scale, scale);
+            mesh.parent?.add(outlineMesh);
+            outlinesByMesh.set(mesh, outlineMesh);
+        };
+
+        const allNodeIds = [...new Set([...(hoveredNodeId ? [hoveredNodeId] : []), ...selectedNodeIds])];
+        allNodeIds.flatMap(getMeshes).forEach((m) => addOutline(m, '#00e5ff', 0.055));
+
+        return () => {
+            outlinesByMesh.forEach((outlineMesh) => {
+                outlineMesh.parent?.remove(outlineMesh);
+                (outlineMesh.material as THREE.Material).dispose();
+            });
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hoveredNodeId, selectedNodeIds, nodeIndex]);
+
+    return null;
 }
 
 export class VehicleSlotBoundary extends Component<{

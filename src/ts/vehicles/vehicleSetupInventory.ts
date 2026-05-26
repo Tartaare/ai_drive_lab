@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VehicleSetupAssignment, VehicleSetupRole, VEHICLE_SETUP_ROLES } from './vehicleSetupTypes';
+import { VehicleSetupAssignment, VehicleSetupRole, VEHICLE_SETUP_ROLES, isWheelSetupRole } from './vehicleSetupTypes';
 
 export interface VehicleSetupNode {
     id: string;
@@ -70,12 +70,104 @@ export function buildVehicleSetupInventory(root: THREE.Object3D): VehicleSetupNo
 
 export function detectVehicleSetupAssignments(nodes: VehicleSetupNode[]): AssignmentMap {
     const assignments: AssignmentMap = {};
+    const candidates = nodes.filter((n) => n.id !== 'root');
+
+    const wheelRoles: VehicleSetupRole[] = ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr'];
+
     for (const role of VEHICLE_SETUP_ROLES) {
         if (role.id === 'collision') continue;
-        const detected = nodes.find((node) => node.id !== 'root' && matchesRole(node.name, role.id));
-        if (detected) assignments[role.id] = { role: role.id, nodeIds: [detected.id] };
+
+        if (isWheelSetupRole(role.id)) {
+            const scored = candidates
+                .map((n) => ({ node: n, score: scoreWheelMatch(n.name, role.id) }))
+                .filter((e) => e.score > 0)
+                .sort((a, b) => b.score - a.score);
+
+            if (scored.length === 0) continue;
+
+            const best = scored[0].node;
+            const nodeIds = [best.id];
+
+            const companion = findWheelCompanion(best, scored[0].score, candidates, role.id, nodeIds);
+            if (companion) nodeIds.push(companion.id);
+
+            assignments[role.id] = { role: role.id, nodeIds };
+        } else {
+            const detected = candidates.find((n) => matchesRole(n.name, role.id));
+            if (detected) assignments[role.id] = { role: role.id, nodeIds: [detected.id] };
+        }
     }
+
+    const assigned = resolveWheelConflicts(assignments, wheelRoles, candidates);
+    wheelRoles.forEach((r) => { if (assigned[r]) assignments[r] = assigned[r]; });
+
     return assignments;
+}
+
+function findWheelCompanion(
+    primary: VehicleSetupNode,
+    primaryScore: number,
+    candidates: VehicleSetupNode[],
+    role: VehicleSetupRole,
+    excludeIds: string[]
+): VehicleSetupNode | null {
+    const primaryNorm = normalizeName(primary.name);
+    const isTire = primaryNorm.includes('tire') || primaryNorm.includes('tyre');
+    const isWheel = primaryNorm.includes('wheel') || primaryNorm.includes('rim');
+
+    return candidates.find((n) => {
+        if (excludeIds.includes(n.id)) return false;
+        const score = scoreWheelMatch(n.name, role);
+        if (score <= 0) return false;
+        const norm = normalizeName(n.name);
+        const companionIsTire = norm.includes('tire') || norm.includes('tyre');
+        const companionIsWheel = norm.includes('wheel') || norm.includes('rim');
+        return (isTire && companionIsWheel) || (isWheel && companionIsTire);
+    }) ?? null;
+}
+
+function resolveWheelConflicts(
+    assignments: AssignmentMap,
+    wheelRoles: VehicleSetupRole[],
+    candidates: VehicleSetupNode[]
+): AssignmentMap {
+    const nodeUsage = new Map<string, VehicleSetupRole[]>();
+    for (const role of wheelRoles) {
+        const a = assignments[role];
+        if (!a) continue;
+        a.nodeIds.forEach((id) => {
+            nodeUsage.set(id, [...(nodeUsage.get(id) ?? []), role]);
+        });
+    }
+
+    const conflicts = new Set<string>();
+    nodeUsage.forEach((roles, id) => { if (roles.length > 1) conflicts.add(id); });
+    if (conflicts.size === 0) return assignments;
+
+    const resolved: AssignmentMap = { ...assignments };
+    for (const role of wheelRoles) {
+        const a = resolved[role];
+        if (!a) continue;
+        const hasConflict = a.nodeIds.some((id) => conflicts.has(id));
+        if (!hasConflict) continue;
+
+        const fallback = candidates
+            .filter((n) => !a.nodeIds.includes(n.id))
+            .map((n) => ({ node: n, score: scoreWheelMatch(n.name, role) }))
+            .filter((e) => e.score > 0 && !nodeUsedByOtherRole(n_id(e.node), role, resolved, wheelRoles))
+            .sort((a, b) => b.score - a.score)[0];
+
+        if (fallback) {
+            resolved[role] = { role, nodeIds: [fallback.node.id] };
+        }
+    }
+    return resolved;
+}
+
+function n_id(n: VehicleSetupNode): string { return n.id; }
+
+function nodeUsedByOtherRole(nodeId: string, excludeRole: VehicleSetupRole, assignments: AssignmentMap, roles: VehicleSetupRole[]): boolean {
+    return roles.filter((r) => r !== excludeRole).some((r) => assignments[r]?.nodeIds.includes(nodeId));
 }
 
 export function resolveVehicleSetupConflicts(assignments: AssignmentMap, nodes: VehicleSetupNode[]): VehicleSetupConflict[] {
@@ -136,16 +228,49 @@ function getNodeDepth(node: THREE.Object3D, root: THREE.Object3D): number {
     return node === root ? 0 : depth + 1;
 }
 
+function normalizeName(name: string): string {
+    return name.toLowerCase().replace(/[\s\-\.]+/g, '_').replace(/_+/g, '_');
+}
+
 function matchesRole(name: string, role: VehicleSetupRole): boolean {
-    const value = name.toLowerCase().replace(/[\s-]+/g, '_');
-    const isWheel = value.includes('wheel') || value.includes('tire') || value.includes('tyre') || value.includes('rim');
-    if (role === 'steering_wheel') {
-        return value.includes('steering') && value.includes('wheel') && !value.includes('front');
-    }
-    if (!isWheel) return false;
-    if (role === 'wheel_fl') return value.includes('fl') || value.includes('front_left') || value.includes('left_front');
-    if (role === 'wheel_fr') return value.includes('fr') || value.includes('front_right') || value.includes('right_front');
-    if (role === 'wheel_rl') return value.includes('rl') || value.includes('rear_left') || value.includes('left_rear') || value.includes('back_left');
-    if (role === 'wheel_rr') return value.includes('rr') || value.includes('rear_right') || value.includes('right_rear') || value.includes('back_right');
-    return false;
+    return role === 'steering_wheel' && scoreSteeringMatch(normalizeName(name)) > 0;
+}
+
+function scoreSteeringMatch(v: string): number {
+    if (v.includes('steering') && (v.includes('wheel') || v.includes('volant'))) return 10;
+    if (v === 'steering' || v === 'volant') return 6;
+    return 0;
+}
+
+function scoreWheelMatch(name: string, role: VehicleSetupRole): number {
+    const v = normalizeName(name);
+    const isTireType = v.includes('tire') || v.includes('tyre');
+    const isWheelType = v.includes('wheel') || v.includes('rim') || v.includes('roue');
+    const isWheelPart = isTireType || isWheelType;
+
+    if (!isWheelPart) return 0;
+    if (v.includes('steering') || v.includes('volant')) return 0;
+
+    const isFront = v.includes('front') || v.includes('avant') || /\bfw?\b/.test(v) || /_front/.test(v) || /front_/.test(v);
+    const isRear  = v.includes('rear') || v.includes('back') || v.includes('arriere') || /_rear/.test(v) || /_back/.test(v) || /rear_/.test(v) || /back_/.test(v);
+    const isLeft  = v.includes('left') || v.includes('gauche') || /_left/.test(v) || /left_/.test(v);
+    const isRight = v.includes('right') || v.includes('droit') || /_right/.test(v) || /right_/.test(v);
+
+    const abbrFl = /_fl(\b|_|\d|$)/.test(v) || /^fl(\b|_|\d)/.test(v) || v === 'fl';
+    const abbrFr = /_fr(\b|_|\d|$)/.test(v) || /^fr(\b|_|\d)/.test(v) || v === 'fr';
+    const abbrRl = /_rl(\b|_|\d|$)/.test(v) || /^rl(\b|_|\d)/.test(v) || v === 'rl';
+    const abbrRr = /_rr(\b|_|\d|$)/.test(v) || /^rr(\b|_|\d)/.test(v) || v === 'rr';
+
+    const hasFl = abbrFl || (isFront && isLeft && !isRight);
+    const hasFr = abbrFr || (isFront && isRight && !isLeft);
+    const hasRl = abbrRl || (isRear && isLeft && !isRight);
+    const hasRr = abbrRr || (isRear && isRight && !isLeft);
+
+    const baseScore = isTireType ? 5 : 7;
+
+    if (role === 'wheel_fl') return hasFl ? baseScore + 3 : 0;
+    if (role === 'wheel_fr') return hasFr ? baseScore + 3 : 0;
+    if (role === 'wheel_rl') return hasRl ? baseScore + 3 : 0;
+    if (role === 'wheel_rr') return hasRr ? baseScore + 3 : 0;
+    return 0;
 }

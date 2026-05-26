@@ -1,4 +1,4 @@
-import { MutableRefObject, useCallback, useEffect, useMemo, useState } from 'react';
+import { MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GAME_MODES, TRACKS, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
@@ -41,6 +41,8 @@ export function Showroom(props: ShowroomProps): JSX.Element {
     const vehicleSettingsOpen = props.vehicleSettingsOpen;
     const [statsOverrides, setStatsOverrides] = useState<Record<VehicleStatKey, number> | null>(null);
     const [highlightedVehicleNodeIds, setHighlightedVehicleNodeIds] = useState<string[]>([]);
+    const [pickingMode, setPickingMode] = useState(false);
+    const onNodePickedRef = useRef<((nodeId: string) => void) | undefined>(undefined);
     const rawVehicle = props.vehicles[props.vehicleIndex] || props.vehicles[0];
     const vehicle = useMemo((): typeof rawVehicle => {
         if (!statsOverrides) return rawVehicle;
@@ -63,6 +65,10 @@ export function Showroom(props: ShowroomProps): JSX.Element {
             if (overrides) setStatsOverrides(overrides as Record<VehicleStatKey, number>);
         });
     }, [rawVehicle.id]);
+
+    const handlePickingRoleChange = useCallback((role: import('../../vehicles/vehicleSetupTypes').VehicleSetupRole | null): void => {
+        setPickingMode(role !== null);
+    }, []);
 
     const handleStatsSave = useCallback(async (vehicleId: string, overrides: Record<VehicleStatKey, number>): Promise<void> => {
         await saveVehicleStats(vehicleId, overrides);
@@ -101,7 +107,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                     </div>
                 </section>
                 <section className="showroom-vehicle" aria-labelledby="showroom-vehicle-name">
-                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} highlightedNodeIds={highlightedVehicleNodeIds} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
+                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} highlightedNodeIds={highlightedVehicleNodeIds} garageMode={vehicleSettingsOpen} pickingMode={pickingMode} onNodePicked={(nodeId) => onNodePickedRef.current?.(nodeId)} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
                     <div className="vehicle-info" aria-hidden={vehicleSettingsOpen}>
                         <div className="vehicle-info__glass">
                             <div className="vehicle-selector">
@@ -126,7 +132,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                         {track && track.id === 'procedural' ? <><TrackMiniature config={props.proceduralConfig} seed={props.proceduralSeed} difficulty={props.proceduralDifficulty} /><div className="track-panel__body"><span className="track-panel__label">{track.label}</span><strong>{proceduralLength} m</strong><span>Difficulté {props.proceduralDifficulty.toUpperCase()}</span><span>Seed {props.proceduralSeed}</span></div><button className="track-new-btn" type="button" tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onNewTrack}>New Track</button></> : <><div className="track-miniature track-miniature--empty">GP</div><div className="track-panel__body"><span className="track-panel__label">{track ? track.label : 'No track'}</span><strong>Indisponible</strong><span>{track ? track.unavailableReason || 'Asset absent' : 'Mode indisponible'}</span></div></>}
                     </div>
                 </section>
-                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} onHighlightNodeIds={setHighlightedVehicleNodeIds} onImportPreview={props.onImportPreview} onImportSave={props.onImportSave} onImportDelete={props.onImportDelete} />
+                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} onHighlightNodeIds={setHighlightedVehicleNodeIds} onPickingRoleChange={handlePickingRoleChange} onNodePickedRef={onNodePickedRef} onImportPreview={props.onImportPreview} onImportSave={props.onImportSave} onImportDelete={props.onImportDelete} />
             </div>
         </div>
     );
