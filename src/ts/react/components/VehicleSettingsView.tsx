@@ -201,14 +201,20 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                                         <button className="vehicle-setup-clear" type="button" tabIndex={active ? 0 : -1} onClick={() => clearRole(role.id)}>Auto / aucun mesh</button>
                                         <div className="vehicle-setup-options">
                                             {selectableNodes.map((node) => (
-                                                <label className="vehicle-setup-option" key={node.id} style={{ paddingLeft: `${0.65 + Math.min(node.depth, 5) * 0.45}rem` }}>
+                                                <label
+                                                    className="vehicle-setup-option"
+                                                    key={node.id}
+                                                    style={{ paddingLeft: `${0.65 + Math.min(node.depth, 5) * 0.45}rem` }}
+                                                    onMouseEnter={() => onHighlightNodeIds([node.id])}
+                                                    onMouseLeave={() => onHighlightNodeIds(assignments[role.id]?.nodeIds ?? [])}
+                                                >
                                                     <input
                                                         type="checkbox"
                                                         checked={selected.includes(node.id)}
                                                         tabIndex={active ? 0 : -1}
                                                         onChange={() => toggleNode(role.id, node.id)}
-                                                        onMouseEnter={() => onHighlightNodeIds([node.id])}
                                                         onFocus={() => onHighlightNodeIds([node.id])}
+                                                        onBlur={() => onHighlightNodeIds(assignments[role.id]?.nodeIds ?? [])}
                                                     />
                                                     <span>{node.name}</span>
                                                     <small>{node.isMesh ? 'mesh' : `${node.meshNodeIds.length} meshes`}</small>
