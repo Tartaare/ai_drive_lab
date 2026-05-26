@@ -47,11 +47,13 @@ function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
     return { groupRef, modelRef };
 }
 
-export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelReady, highlightedNodeIds = [], garageMode = false }: SlotAnimationProps & {
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelReady, highlightedNodeIds = [], hoveredNodeId = null, garageMode = false, pickingMode = false }: SlotAnimationProps & {
     onReady: () => void;
     onModelReady?: (root: THREE.Object3D | null) => void;
     highlightedNodeIds?: string[];
+    hoveredNodeId?: string | null;
     garageMode?: boolean;
+    pickingMode?: boolean;
 }): JSX.Element {
     const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
     const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
@@ -109,6 +111,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelRe
     });
 
     useEffect(() => {
+        if (pickingMode) return;
         const sourceRoot = model.children[0];
         if (!sourceRoot) return;
 
@@ -142,12 +145,13 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelRe
                 mesh.material = original;
             });
         };
-    }, [highlightedNodeIds, model]);
+    }, [highlightedNodeIds, pickingMode, model]);
 
     return (
         <group ref={groupRef}>
             <primitive ref={modelRef} object={model} />
             <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />
+            {pickingMode && <VehiclePickHoverBox model={model} hoveredNodeId={hoveredNodeId} selectedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />}
         </group>
     );
 }
@@ -189,6 +193,67 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
                     <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.82} depthTest={false} />
                 </mesh>
             ))}
+        </group>
+    );
+}
+
+function computeNodeBox(model: THREE.Group, nodeId: string): { center: THREE.Vector3; size: THREE.Vector3 } | null {
+    const sourceRoot = model.children[0];
+    if (!sourceRoot) return null;
+    model.updateMatrixWorld(true);
+    const nodeIndex = createVehicleNodeIndex(sourceRoot);
+    const node = nodeIndex.get(nodeId);
+    if (!node) return null;
+    const worldBox = new THREE.Box3().setFromObject(node);
+    if (worldBox.isEmpty()) return null;
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    worldBox.getCenter(center).applyMatrix4(model.matrixWorld.clone().invert());
+    worldBox.getSize(size);
+    return { center, size };
+}
+
+function VehiclePickHoverBox({ model, hoveredNodeId, selectedNodeIds, rotationYRef }: {
+    model: THREE.Group;
+    hoveredNodeId: string | null;
+    selectedNodeIds: string[];
+    rotationYRef: MutableRefObject<number>;
+}): JSX.Element | null {
+    const groupRef = useRef<THREE.Group | null>(null);
+
+    const hoverBox = useMemo(
+        () => hoveredNodeId ? computeNodeBox(model, hoveredNodeId) : null,
+        [hoveredNodeId, model]
+    );
+
+    const selectedBoxes = useMemo(
+        () => selectedNodeIds.flatMap((id) => {
+            const box = computeNodeBox(model, id);
+            return box ? [{ id, ...box }] : [];
+        }),
+        [selectedNodeIds, model]
+    );
+
+    useFrame(() => {
+        if (groupRef.current) groupRef.current.rotation.y = rotationYRef.current;
+    });
+
+    if (!hoverBox && selectedBoxes.length === 0) return null;
+
+    return (
+        <group ref={groupRef} renderOrder={9}>
+            {selectedBoxes.map((box) => (
+                <mesh key={`sel-${box.id}`} position={box.center}>
+                    <boxGeometry args={[Math.max(box.size.x + 0.04, 0.06), Math.max(box.size.y + 0.04, 0.06), Math.max(box.size.z + 0.04, 0.06)]} />
+                    <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.9} depthTest={false} />
+                </mesh>
+            ))}
+            {hoverBox && (
+                <mesh key="hover" position={hoverBox.center}>
+                    <boxGeometry args={[Math.max(hoverBox.size.x + 0.06, 0.08), Math.max(hoverBox.size.y + 0.06, 0.08), Math.max(hoverBox.size.z + 0.06, 0.08)]} />
+                    <meshBasicMaterial color="#00e5ff" wireframe transparent opacity={0.95} depthTest={false} />
+                </mesh>
+            )}
         </group>
     );
 }
