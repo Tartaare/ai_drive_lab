@@ -1,44 +1,10 @@
 import * as THREE from 'three';
+import { collectLights, findFirstShadowCasterAny, lightLabel } from './sceneDebugHelpers';
+export type { SceneDebugSource, SoftShadowsSource } from './sceneDebugTypes';
+import type { SceneDebugSource, SoftShadowsSource } from './sceneDebugTypes';
 
 // @ts-ignore — lil-gui ships CJS/UMD without ESM types
 import GUI from 'lil-gui';
-
-export interface SoftShadowsSource {
-	opacity: number;
-	alphaTest: number;
-	colorBlend: number;
-	reset(): void;
-}
-
-export interface SceneDebugSource
-{
-	renderer: THREE.WebGLRenderer;
-	camera: THREE.PerspectiveCamera;
-	scene: THREE.Scene;
-	ground?: THREE.Mesh;
-	shadowPlane?: THREE.Mesh;
-	softShadows?: SoftShadowsSource;
-	environmentPreset?: { current: string; onChange(preset: string): void; onToggle(enabled: boolean): void };
-	sky?: {
-		sunLight: THREE.DirectionalLight;
-		sunPosition: THREE.Vector3;
-		theta: number;
-		phi: number;
-	};
-	dayNight?: {
-		timeOfDayHours: number;
-		setTimeOfDay(h: number): void;
-		setHoursPerSecond(v: number): void;
-	};
-	cameraRadius?: number;
-	cameraPhi?: number;
-	cameraSensitivity?: number;
-	cameraAzimuth?: number;
-	cameraElevation?: number;
-	cameraDistance?: number;
-	cameraHeight?: number;
-	showroomCamera?: { radius: number; elevation: number; lookAtY: number; fov: number };
-}
 
 export class SceneDebugPanel
 {
@@ -168,13 +134,13 @@ export class SceneDebugPanel
 	/* ── Lights (auto-discovered) ─────────────── */
 	private buildLightsFolder(s: SceneDebugSource): void
 	{
-		const lights = this.collectLights(s.scene);
+		const lights = collectLights(s.scene);
 		if (lights.length === 0) return;
 		const f = this.gui!.addFolder('Lights');
 
 		lights.forEach((light, i) =>
 		{
-			const label = this.lightLabel(light, i);
+			const label = lightLabel(light, i);
 			const sub = f.addFolder(label);
 			const maxIntensity = (light as any).isRectAreaLight ? 50 : 10;
 			sub.add(light, 'intensity', 0, maxIntensity, 0.1).name('Intensity');
@@ -254,7 +220,7 @@ export class SceneDebugPanel
 	/* ── Shadow Camera ────────────────────────── */
 	private buildShadowFolder(s: SceneDebugSource): void
 	{
-		const light = this.findFirstShadowCasterAny(s.scene);
+		const light = findFirstShadowCasterAny(s.scene);
 		if (!light) return;
 		const shadowLight = light as THREE.SpotLight | THREE.DirectionalLight;
 		const shadow = shadowLight.shadow;
@@ -350,39 +316,5 @@ export class SceneDebugPanel
 			env.onChange(v);
 		});
 		f.open();
-	}
-
-	/* ── Helpers ──────────────────────────────── */
-	private collectLights(scene: THREE.Scene): THREE.Light[]
-	{
-		const results: THREE.Light[] = [];
-		scene.traverse((child: THREE.Object3D) =>
-		{
-			if ((child as any).isLight) results.push(child as THREE.Light);
-		});
-		return results;
-	}
-
-	private lightLabel(light: THREE.Light, index: number): string
-	{
-		if ((light as any).isDirectionalLight) return 'Dir ' + index;
-		if ((light as any).isPointLight) return 'Point ' + index;
-		if ((light as any).isHemisphereLight) return 'Hemi ' + index;
-		if ((light as any).isSpotLight) return 'Spot ' + index;
-		if ((light as any).isAmbientLight) return 'Ambient ' + index;
-		if ((light as any).isRectAreaLight) return 'RectArea ' + index;
-		return 'Light ' + index;
-	}
-
-	private findFirstShadowCasterAny(scene: THREE.Scene): THREE.Light | null
-	{
-		let result: THREE.Light | null = null;
-		scene.traverse((child: THREE.Object3D) =>
-		{
-			if (result) return;
-			const light = child as THREE.Light;
-			if ((light as any).isLight && (light as any).castShadow) result = light;
-		});
-		return result;
 	}
 }

@@ -1,0 +1,128 @@
+import { useAnimations, useGLTF } from '@react-three/drei';
+import { useFrame, useThree } from '@react-three/fiber';
+import { Component, MutableRefObject, ReactNode, useEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+import { VehicleDefinition } from '../../../ui/menu/catalog';
+import { easeInOutCubic } from './slotState';
+import { SWAP_DURATION_MS, VehicleSlot } from './types';
+import { createNormalizedVehicle } from './vehicleModel';
+
+interface SlotAnimationProps {
+    slot: VehicleSlot;
+    rotationYRef: MutableRefObject<number>;
+    onDone: (vehicle: VehicleDefinition) => void;
+}
+
+function useSlotAnimation({ slot, rotationYRef, onDone }: SlotAnimationProps): {
+    groupRef: MutableRefObject<THREE.Group | null>;
+    modelRef: MutableRefObject<THREE.Group | null>;
+} {
+    const groupRef = useRef<THREE.Group | null>(null);
+    const modelRef = useRef<THREE.Group | null>(null);
+    const startRef = useRef<number | null>(null);
+    const doneRef = useRef(false);
+    const { viewport } = useThree();
+    const offscreen = Math.max(4.2, viewport.width * 0.5 + 2.2);
+
+    useFrame(({ clock }) => {
+        if (!groupRef.current || !modelRef.current) return;
+        modelRef.current.rotation.y = rotationYRef.current;
+        if (slot.role === 'active') {
+            groupRef.current.position.x = 0;
+            return;
+        }
+        if (startRef.current === null) startRef.current = clock.elapsedTime * 1000;
+        const progress = THREE.MathUtils.clamp((clock.elapsedTime * 1000 - startRef.current) / SWAP_DURATION_MS, 0, 1);
+        const eased = easeInOutCubic(progress);
+        const direction = slot.direction === 0 ? 1 : slot.direction;
+        groupRef.current.position.x = slot.role === 'incoming'
+            ? THREE.MathUtils.lerp(-direction * offscreen, 0, eased)
+            : THREE.MathUtils.lerp(0, direction * offscreen, eased);
+        if (progress < 1 || doneRef.current || slot.role !== 'incoming') return;
+        doneRef.current = true;
+        onDone(slot.vehicle);
+    });
+
+    return { groupRef, modelRef };
+}
+
+export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone }: SlotAnimationProps & {
+    onReady: () => void;
+}): JSX.Element {
+    const gltf = useGLTF(slot.vehicle.modelPath) as { scene: THREE.Object3D; animations: THREE.AnimationClip[] };
+    const model = useMemo(() => createNormalizedVehicle(gltf.scene), [gltf.scene]);
+    const { groupRef, modelRef } = useSlotAnimation({ slot, rotationYRef, onDone });
+    const { actions, mixer } = useAnimations(gltf.animations, modelRef);
+
+    useEffect(() => {
+        onReady();
+    }, [onReady]);
+
+    useEffect(() => {
+        if (!mixer) return;
+        if (slot.role === 'active' && gltf.animations.length > 0) {
+            Object.values(actions).forEach((action) => {
+                if (!action) return;
+                action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+            });
+        } else {
+            Object.values(actions).forEach((action) => action?.stop());
+        }
+    }, [slot.role, actions, mixer, gltf.animations.length]);
+
+    useFrame((_, delta) => {
+        mixer?.update(delta);
+    });
+
+    return (
+        <group ref={groupRef}>
+            <primitive ref={modelRef} object={model} />
+        </group>
+    );
+}
+
+export class VehicleSlotBoundary extends Component<{
+    slot: VehicleSlot;
+    rotationYRef: MutableRefObject<number>;
+    onDone: (vehicle: VehicleDefinition) => void;
+    onError: () => void;
+    children: ReactNode;
+}, { failed: boolean; }> {
+    public state = { failed: false };
+
+    public static getDerivedStateFromError(): { failed: boolean } {
+        return { failed: true };
+    }
+
+    public componentDidCatch(): void {
+        this.props.onError();
+    }
+
+    public componentDidUpdate(previousProps: { slot: VehicleSlot }): void {
+        if (previousProps.slot.vehicle.id !== this.props.slot.vehicle.id && this.state.failed) {
+            this.setState({ failed: false });
+        }
+    }
+
+    public render(): ReactNode {
+        if (this.state.failed) {
+            return <FallbackVehicleSlot slot={this.props.slot} rotationYRef={this.props.rotationYRef} onDone={this.props.onDone} />;
+        }
+        return this.props.children;
+    }
+}
+
+function FallbackVehicleSlot(props: SlotAnimationProps): JSX.Element {
+    const { groupRef, modelRef } = useSlotAnimation(props);
+
+    return (
+        <group ref={groupRef}>
+            <group ref={modelRef}>
+                <mesh castShadow receiveShadow position={[0, 0.42, 0]}>
+                    <boxGeometry args={[2.8, 0.52, 1.15]} />
+                    <meshStandardMaterial color="#eeeeee" roughness={0.32} metalness={0.2} />
+                </mesh>
+            </group>
+        </group>
+    );
+}

@@ -9,9 +9,10 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { Showroom } from './components/Showroom';
 import { ShowroomVehicleHandle } from './components/ShowroomVehicleCanvas';
 import { getProceduralLength } from './components/TrackMiniature';
-import { AppPhase, MainMenuSelection, ProceduralParamKey, RuntimeCar, TelemetryState, ThemeName } from './types';
-
-const emptyTelemetry: TelemetryState = { speed: 0, gear: 'N', transmission: 'AUTO', rpm: 0, maxRpm: 8000 };
+import { emptyTelemetry, useDrivingTelemetry } from './hooks/useDrivingTelemetry';
+import { useHashRoute } from './hooks/useHashRoute';
+import { useSceneDebugHotkey } from './hooks/useSceneDebugHotkey';
+import { AppPhase, MainMenuSelection, ProceduralParamKey, TelemetryState, ThemeName } from './types';
 
 export function App(): JSX.Element {
     const [phase, setPhase] = useState<AppPhase>('loading');
@@ -24,6 +25,8 @@ export function App(): JSX.Element {
     const [proceduralSeed, setProceduralSeed] = useState(() => Math.floor(Math.random() * 1000000));
     const [proceduralDifficulty, setProceduralDifficulty] = useState('moyen');
     const [transitionLocked, setTransitionLocked] = useState(false);
+    const [menuRoute, navigateMenu] = useHashRoute();
+    const vehicleSettingsOpen = phase === 'menu' && menuRoute === 'garage';
     const [paused, setPaused] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [generationPending, setGenerationPending] = useState(false);
@@ -130,43 +133,8 @@ export function App(): JSX.Element {
         };
     }, [applyTheme, loadFavorites]);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== 'F3') return;
-            event.preventDefault();
-            const panel = debugPanelRef.current;
-            const wasVisible = panel.isVisible();
-            const world = worldRef.current;
-            if (world) {
-                panel.toggle(world);
-                return;
-            }
-            const preview = previewRef.current;
-            if (!preview) return;
-            panel.toggle(preview.getSceneRefs());
-            preview.setDebugOrbitMode(!wasVisible);
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
-
-    useEffect(() => {
-        if (phase !== 'driving') return;
-        const timer = window.setInterval(() => {
-            const car = (worldRef.current as unknown as { car?: RuntimeCar } | null)?.car;
-            if (!car) return;
-            const currentGear = car.currentGear || 0;
-            const gear = currentGear <= -1 ? 'R' : currentGear === 0 ? 'N' : String(currentGear);
-            setTelemetry({
-                speed: Math.abs(Math.round((car.speed || 0) * 3.6)),
-                gear,
-                transmission: car.isManualTransmission ? 'MAN' : 'AUTO',
-                rpm: car.currentRpm || 0,
-                maxRpm: car.redlineRpm || 8000
-            });
-        }, 50);
-        return () => window.clearInterval(timer);
-    }, [phase]);
+    useSceneDebugHotkey(debugPanelRef, worldRef, previewRef);
+    useDrivingTelemetry(phase, worldRef, setTelemetry);
 
     useEffect(() => () => {
         if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
@@ -190,9 +158,10 @@ export function App(): JSX.Element {
         setPaused(false);
         setSettingsOpen(false);
         setTelemetry(emptyTelemetry);
+        navigateMenu('showroom');
         setPhase('driving');
         void AppStorage.savePrefs({ vehicleId: selection.vehicleId, levelId: selection.levelId, theme }).catch(() => undefined);
-    }, [phase, selection, theme]);
+    }, [navigateMenu, phase, selection, theme]);
 
     const stopGame = useCallback(() => {
         const activeSelection = activeSelectionRef.current || selection;
@@ -213,8 +182,9 @@ export function App(): JSX.Element {
         setPaused(false);
         setSettingsOpen(false);
         setTelemetry(emptyTelemetry);
+        navigateMenu('showroom');
         setPhase('menu');
-    }, [proceduralConfig, proceduralDifficulty, proceduralSeed, selection]);
+    }, [navigateMenu, proceduralConfig, proceduralDifficulty, proceduralSeed, selection]);
 
     const changeVehicle = useCallback((direction: -1 | 1) => {
         if (transitionLocked) return;
@@ -331,7 +301,7 @@ export function App(): JSX.Element {
             <div id="game-container" />
             <div className="ui-layer" id="ui-layer">
                 {phase === 'loading' && <div id="loading" className="loader-overlay"><h3>INITIALIZING ENGINE</h3><div className="loader-bar"><div className="loader-progress" /></div></div>}
-                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={handleVehicleTransitionChange} />}
+                {phase === 'menu' && <Showroom theme={theme} vehicleIndex={vehicleIndex} modeId={modeId} vehicleDirection={previousVehicleDirection} transitionLocked={transitionLocked} trackAvailability={trackAvailability} proceduralConfig={proceduralConfig} proceduralSeed={proceduralSeed} proceduralDifficulty={proceduralDifficulty} previewRef={previewRef} vehicleSettingsOpen={vehicleSettingsOpen} onThemeToggle={() => setTheme(theme === 'light' ? 'dark' : 'light')} onModeSelect={setModeId} onVehicleChange={changeVehicle} onNewTrack={randomizeMenuTrack} onStart={startGame} onTransitionChange={handleVehicleTransitionChange} onNavigateMenu={navigateMenu} />}
                 {phase === 'driving' && <><button id="toggle-settings" className={`settings-toggle${showSettings ? '' : ' hidden'}`} type="button" aria-label="Ouvrir la configuration de piste" onClick={() => setSettingsOpen((open) => !open)}>⚙</button><Hud telemetry={telemetry} /><div id="pause-overlay" className={`menu-overlay${paused ? '' : ' hidden'}`}><h1>PAUSED</h1><div className="menu-grid"><button id="resume-game" className="cyber-btn" type="button" onClick={() => worldRef.current?.resume()}>RESUME</button><button id="back-to-menu" className="cyber-btn cyber-btn--danger" type="button" onClick={stopGame}>ABORT SESSION</button></div></div>{showSettings && <SettingsPanel active={settingsOpen} config={proceduralConfig} difficulty={proceduralDifficulty} pending={generationPending} favorites={favorites} onClose={() => setSettingsOpen(false)} onRegenerate={regenerateTrack} onDifficultyChange={changeDifficulty} onParameterChange={changeParameter} onSaveFavorite={saveFavorite} onLoadFavorite={loadFavorite} onDeleteFavorite={deleteFavorite} />}</>}
             </div>
         </>

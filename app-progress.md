@@ -1,3 +1,43 @@
+# SPRINT modular-file-size — Modularisation fichiers >300 lignes
+
+# Date : 2026-05-25
+
+# Statut : termine
+
+# Composants :
+- `src/ts/main.ts`
+- `src/ts/world/worldCore/*`
+- `src/ts/vehicles/SimpleCar.ts`
+- `src/ts/vehicles/simpleCar/*`
+- `src/ts/react/App.tsx`
+- `src/ts/react/hooks/*`
+- `src/ts/react/components/ShowroomVehicleCanvas.tsx`
+- `src/ts/react/components/showroomVehicle/*`
+- `src/ts/ui/SceneDebugPanel.ts`
+- `src/ts/ui/sceneDebugHelpers.ts`
+- `src/ts/ui/sceneDebugTypes.ts`
+- `src/css/showroom/_vehicle.css`
+- `src/css/showroom/_vehicle-stage.css`
+- `src/css/showroom/_vehicle-stats.css`
+- `src/css/style.css`
+- `README.md`
+
+# Validation :
+- Creation de la branche `feature/sprint-modular-file-size` depuis `main`.
+- Decoupe de `ShowroomVehicleCanvas.tsx` en modules scene R3F, slots vehicule, normalisation modele et controles pointer/clavier.
+- Decoupe de `App.tsx` via hooks de telemetrie conduite et debug F3.
+- Extraction des types/helpers de `SceneDebugPanel.ts`.
+- Decoupe CSS vehicule en stage, infos et stats en preservant l'ordre de cascade.
+- Decoupe moteur sans changement intentionnel de logique : `World` et `SimpleCar` restent les points d'entree publics, avec modules internes d'installation de prototype.
+- Scan applicatif final hors `src/lib/cannon` : aucun fichier `ts/tsx/js/css/mts` au-dessus de `300` lignes. Plus grands fichiers : `SceneDebugPanel.ts` `286`, `App.tsx` `280`, `_loader-motion-responsive.css` `270`, `scripts/test-trackgen.js` `265`.
+- `npm run typecheck` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille des chunks `three` / application.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Risque moyen : la decoupe moteur utilise des modules internes d'installation de prototype pour preserver le comportement exact tout en reduisant les fichiers. Les validations automatiques passent, mais une verification manuelle conduite/showroom reste recommandee.
+- Verification manuelle recommandee : conduite Z/Q/S/D, pause `Escape`, reset `R`, phares `L`, transmission `M`, vitesses manuelles, showroom carousel/drag/zoom et debug F3.
+
 # SPRINT showroom-vehicle-settings-entry — Sous-vue réglages véhicule Showroom
 
 # Date : 2026-05-25

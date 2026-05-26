@@ -6,20 +6,39 @@ Nouvelle branche pour cette mission (respecte les règles).
 Dans le menu VehicleSettingsView, on va s'occuper des menus:
 
 1. Le menu de droite doit servir à importer des modeles 3D de véhicules (glb, gltf, etc.) que le joueur pourra utiliser dans le jeu.
-- Il faut que le joueur puisse soit drag and drop, soit cliquer sur un bouton pour importer un fichier.
-- Le vehicule importé doit être affiché dans la scene 3D. Penser à la gestion des erreurs (fichier non compatible, etc.) et l'UI que ça implique.
-- Il faut pouvoir enregistrer le véhicule importé dans la base de données.
-- Il faut pouvoir supprimer un véhicule importé.
-
+- Il faut que le joueur puisse soit drag and drop, soit cliquer sur un bouton pour importer un fichier. (Pense aux états d’import : chargement, validation, erreur, succès).
+- Le vehicule importé doit être affiché dans la scene 3D. 
+- Afficher une checklist durant le processus d'importation.
+- Penser à la gestion des erreurs (Messages d’erreur exploitables).
+- Il faut pouvoir enregistrer le véhicule importé dans la base de données. Il faut aussi pouvoir supprimer un véhicule importé.
+- 
 
 2. Le menu de gauche doit servir à gérer la détection des éléments du véhicule.
-Dans notre app pour chaque véhicule on détecte déjà les parties du véhicule dont on a besoin avec "VehicleSetup.prepareModel(gltf.scene)". Dans ce menu on affichera donc la liste des éléments recherchés et pour chacun on mettra à coté l'élément détecté correspondant dans un bouton avec une liste déroulante. Ainsi si l'élément détecté ne correspond pas à celui recherché, le joueur pourra choisir l'élément qui correspond.
-Pour une bonne UX, il faut que l'utilisateur
+Dans notre app pour chaque véhicule on détecte déjà les parties du véhicule dont on a besoin avec "VehicleSetup.prepareModel(gltf.scene)". 
+- Dans ce menu on affichera donc: la liste des éléments recherchés et pour chacun on mettra à coté l'élément détecté correspondant dans un bouton avec une liste déroulante. Ainsi si l'élément détecté ne correspond pas à celui recherché, le joueur pourra choisir l'élément qui correspond. 
+- Pour une bonne UX, on mettra en avant l'élément choisi sur le modele 3D quand l'utilisateur survole le bouton associé à cet élément, ainsi il pourra voir visuellement ce qu'il a choisi.
+
+
+
 
 
 
 ===================== DONE =====================
 # commit / merge / push / ect. on veut un repo propre et à jour.
+
+
+1. Autres modifications de ce panneau:
+  - Comme il y a de l'espace vide en dessous du panneau tu peux le descendre un peu dans la page.
+  - Remet tes losanges pour les sliders mais même taille que les cercles actuels. Et ils pourraient changer de couleur seulement lors de  l'usage (quand je lache le clic ils doivent se déselectionner).
+  - Les scores de stat devraient être à droite de leur barre de sliders et pas au dessus. Respecte les mêmes marges que dans le panneau info du véhicule du showroom.
+
+2. Pour retourner au menu principal: au lieu d'une croix dans le panneau de gauche met un vrai bouton Retour au dessus de ce panneau.
+
+1. Je constate encore des différences d'UI design entre le panneau de réglages des stats et le panneau info du véhicule du showroom alors que la position des éléments doit être la plus identique possible:
+  - Le panneau est plus large que celui du showroom et a une bordure orange, alors que celui du showroom est plus petit et n'a pas de bordure orange.
+  - Le nom du vehicule n'est pas centré.
+  - Enleve le trait horizontal de séparation au dessus des boutons enregistrer.
+  - La "marge" entre les boutons enregistrer / supprimer et les sliders au dessus est trop petite, il faut les espacer un peu plus.
 
 
 On a installé lucide-react.
