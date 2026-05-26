@@ -1,0 +1,178 @@
+.vehicle-setup-status {
+    min-height: 22px;
+    margin: -0.55rem 0 0.8rem;
+    color: var(--c-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.vehicle-setup-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.vehicle-setup-row {
+    position: relative;
+}
+
+.vehicle-setup-role {
+    width: 100%;
+    min-height: 54px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--c-border-subtle);
+    background: rgba(255, 255, 255, 0.025);
+    color: var(--c-text);
+    cursor: pointer;
+    text-align: left;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: background 0.2s var(--ease-smooth), border-color 0.2s var(--ease-smooth), transform 0.15s var(--ease-smooth);
+}
+
+.vehicle-setup-role:hover,
+.vehicle-setup-role:focus-visible {
+    border-color: var(--c-motorsport-soft);
+    background: var(--c-motorsport-dim);
+}
+
+.vehicle-setup-role:active {
+    transform: scale(0.985);
+}
+
+.vehicle-setup-role strong {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.vehicle-setup-role small,
+.vehicle-setup-option small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--c-text-muted);
+    font-family: var(--font-body);
+    font-size: 0.66rem;
+    line-height: 1.2;
+}
+
+.vehicle-setup-role em {
+    max-width: 128px;
+    color: var(--c-motorsport);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    font-style: normal;
+    letter-spacing: 0.06em;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.vehicle-setup-row.has-conflict .vehicle-setup-role {
+    border-color: color-mix(in srgb, var(--c-danger) 70%, transparent);
+}
+
+.vehicle-setup-dropdown {
+    margin-top: 0.35rem;
+    border: 1px solid var(--c-border-subtle);
+    background: rgba(0, 0, 0, 0.42);
+}
+
+.vehicle-setup-clear {
+    width: 100%;
+    min-height: 34px;
+    border: 0;
+    border-bottom: 1px solid var(--c-border-subtle);
+    background: transparent;
+    color: var(--c-text-muted);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.vehicle-setup-clear:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.vehicle-setup-options {
+    max-height: 210px;
+    overflow: auto;
+}
+
+.vehicle-setup-option {
+    min-height: 34px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 0.55rem;
+    align-items: center;
+    padding: 0.4rem 0.65rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    cursor: pointer;
+}
+
+.vehicle-setup-option:hover {
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.vehicle-setup-option input {
+    accent-color: var(--c-motorsport);
+}
+
+.vehicle-setup-option span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--c-text);
+    font-family: var(--font-body);
+    font-size: 0.74rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vehicle-setup-option small {
+    margin: 0;
+    text-align: right;
+    text-transform: uppercase;
+}
+
+.vehicle-setup-conflict {
+    margin-top: 0.35rem;
+    color: var(--c-danger);
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    line-height: 1.25;
+}
+
+.vehicle-setup-actions {
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+    .vehicle-setup-options {
+        max-height: 260px;
+    }
+
+    .vehicle-setup-role {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .vehicle-setup-role em {
+        max-width: 100%;
+        text-align: left;
+    }
+}

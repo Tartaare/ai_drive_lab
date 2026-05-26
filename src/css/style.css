@@ -4,6 +4,7 @@
 @import './showroom/_shell.css';
 @import './showroom/_modes.css';
 @import './showroom/_vehicle-stage.css';
+@import './showroom/_vehicle-setup.css';
 @import './showroom/_vehicle.css';
 @import './showroom/_vehicle-stats.css';
 @import './showroom/_track.css';

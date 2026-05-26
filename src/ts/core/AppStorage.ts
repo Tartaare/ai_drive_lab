@@ -30,6 +30,12 @@ export interface SavedCircuit {
 
 export type VehicleStatsOverride = Record<string, number>;
 
+export interface VehicleSetupRecord {
+    vehicleId: string;
+    assignments: Record<string, { role: string; nodeIds: string[] }>;
+    updatedAt: number;
+}
+
 // ─── Sessions ──────────────────────────────────────────────────────────────────
 
 export interface Session {
@@ -44,7 +50,7 @@ export interface Session {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DB_NAME = 'apex-racing-db';
-const DB_VERSION = 2;
+const DB_VERSION = 4;
 const MAX_SESSIONS = 50;
 const MAX_FAVORITES = 10;
 
@@ -53,6 +59,7 @@ const STORE_TRACK = 'track-config';
 const STORE_CIRCUITS = 'saved-circuits';
 const STORE_SESSIONS = 'sessions';
 const STORE_VEHICLE_STATS = 'vehicle-stats';
+const STORE_VEHICLE_SETUP = 'vehicle-setup-assignments';
 
 const SINGLETON_KEY = 'singleton';
 
@@ -80,6 +87,9 @@ async function getDB(): Promise<any> {
                 }
                 if (!db.objectStoreNames.contains(STORE_VEHICLE_STATS)) {
                     db.createObjectStore(STORE_VEHICLE_STATS);
+                }
+                if (!db.objectStoreNames.contains(STORE_VEHICLE_SETUP)) {
+                    db.createObjectStore(STORE_VEHICLE_SETUP, { keyPath: 'vehicleId' });
                 }
             },
         });
@@ -179,6 +189,26 @@ export async function saveVehicleStats(vehicleId: string, overrides: VehicleStat
     if (!db) return;
     try {
         await db.put(STORE_VEHICLE_STATS, overrides, vehicleId);
+    } catch { /* silently degrade */ }
+}
+
+// ─── Vehicle Setup Assignments ────────────────────────────────────────────────
+
+export async function getVehicleSetup(vehicleId: string): Promise<VehicleSetupRecord | null> {
+    const db = await getDB();
+    if (!db) return null;
+    try {
+        return (await db.get(STORE_VEHICLE_SETUP, vehicleId)) ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export async function saveVehicleSetup(record: VehicleSetupRecord): Promise<void> {
+    const db = await getDB();
+    if (!db) return;
+    try {
+        await db.put(STORE_VEHICLE_SETUP, record);
     } catch { /* silently degrade */ }
 }
 

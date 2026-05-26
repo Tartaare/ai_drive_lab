@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { SimpleCar, SurfaceType } from './vehicles/SimpleCar';
 import { VehicleSetup } from './vehicles/VehicleSetup';
+import { VehicleSetupConfig } from './vehicles/vehicleSetupTypes';
 import { Sky } from './world/Sky';
 import { DayNightCycle } from './world/DayNightCycle';
 import { generateTrack, defaultTrackConfig, createTrackObject, TrackData, TrackConfig, KERB_WIDTH_METERS } from './world/ProceduralTrack';
@@ -16,6 +17,7 @@ export interface WorldOptions
 	proceduralSeed?: number;
 	proceduralDifficulty?: string;
 	proceduralConfig?: Partial<TrackConfig>;
+	vehicleSetupConfig?: VehicleSetupConfig | null;
 	onPauseChange?: (isPaused: boolean) => void;
 }
 
@@ -97,6 +99,7 @@ export class World
 	private isDisposed: boolean = false;
 	private debugInput: boolean = false;
 	private onPauseChange?: (isPaused: boolean) => void;
+	private vehicleSetupConfig?: VehicleSetupConfig | null;
 
 	// Input state
 	private mouseDown: boolean = false;
@@ -118,6 +121,7 @@ export class World
 	constructor(carModelPath: string, levelId: string = 'default', options: WorldOptions = {})
 	{
 		this.onPauseChange = options.onPauseChange;
+		this.vehicleSetupConfig = options.vehicleSetupConfig ?? null;
 
 		// Renderer
 		this.renderer = new THREE.WebGLRenderer({ antialias: true });

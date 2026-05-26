@@ -1,3 +1,38 @@
+# SPRINT vehicle-part-detection — Mapping des éléments véhicule
+
+# Date : 2026-05-26
+
+# Statut : termine
+
+# Composants :
+- `src/ts/vehicles/VehicleSetup.ts`
+- `src/ts/vehicles/vehicleSetupTypes.ts`
+- `src/ts/vehicles/vehicleSetupInventory.ts`
+- `src/ts/react/components/VehicleSettingsView.tsx`
+- `src/ts/react/components/showroomVehicle/VehicleSlotMesh.tsx`
+- `src/ts/core/AppStorage.ts`
+- `src/ts/main.ts`
+- `src/ts/world/worldCore/Bootstrap.ts`
+- `src/css/showroom/_vehicle-setup.css`
+- `README.md`
+
+# Validation :
+- Creation de la branche `feature/sprint-vehicle-part-detection` depuis `main`.
+- Le panneau gauche de `VehicleSettingsView` affiche les rôles recherchés : roues FL/FR/RL/RR, volant et collision chassis.
+- Les nodes GLTF sont inventoriés avec ids hiérarchiques stables, puis fusionnés avec l'auto-détection existante et les assignations sauvegardées.
+- Chaque rôle accepte une sélection multi-node pour grouper plusieurs meshes, avec conflits bloquants quand un même mesh descendant est assigné à plusieurs rôles incompatibles.
+- Le survol/focus d'un rôle ou d'une option affiche un wireframe motorsport sur la preview 3D du véhicule.
+- Les assignations sont persistées dans IndexedDB via le store `vehicle-setup-assignments` et réappliquées au lancement de la conduite via `WorldOptions.vehicleSetupConfig`.
+- `VehicleSetup.prepareModel()` conserve l'auto-détection comme fallback, crée une roue physique unique pour un groupe multi-mesh et génère une collision invisible depuis les nodes sélectionnés ou le fallback chassis automatique.
+- `npx tsc --noEmit` : succes.
+- `npm run build` : succes, avec warning Vite existant de taille des chunks `three` / application.
+- `npm run test:trackgen` : succes sur `406` cas.
+
+# Risques restants :
+- Risque moyen : les modèles GLTF dont la hiérarchie change après sauvegarde peuvent invalider certains ids ; les ids absents sont ignorés et l'auto-détection prend le relais.
+- Risque moyen : les roues multi-mesh déplacent les nodes sélectionnés sous un groupe runtime pour suivre la physique ; une validation manuelle conduite par modèle reste recommandée.
+- Verification manuelle recommandee : ouvrir les reglages, grouper pneu/jante, tester un conflit, sauvegarder, relancer la conduite et vérifier qu'il n'y a que quatre roues physiques.
+
 # SPRINT modular-file-size — Modularisation fichiers >300 lignes
 
 # Date : 2026-05-25

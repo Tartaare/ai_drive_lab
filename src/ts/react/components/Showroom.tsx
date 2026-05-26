@@ -36,6 +36,7 @@ interface ShowroomProps {
 export function Showroom(props: ShowroomProps): JSX.Element {
     const vehicleSettingsOpen = props.vehicleSettingsOpen;
     const [statsOverrides, setStatsOverrides] = useState<Record<VehicleStatKey, number> | null>(null);
+    const [highlightedVehicleNodeIds, setHighlightedVehicleNodeIds] = useState<string[]>([]);
     const rawVehicle = VEHICLES[props.vehicleIndex] || VEHICLES[0];
     const vehicle = useMemo((): typeof rawVehicle => {
         if (!statsOverrides) return rawVehicle;
@@ -96,7 +97,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                     </div>
                 </section>
                 <section className="showroom-vehicle" aria-labelledby="showroom-vehicle-name">
-                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
+                    <VehiclePreviewStage vehicle={vehicle} adjacentVehicles={adjacentVehicles} direction={props.vehicleDirection} theme={props.theme} highlightedNodeIds={highlightedVehicleNodeIds} previewRef={props.previewRef} onTransitionChange={props.onTransitionChange} />
                     <div className="vehicle-info" aria-hidden={vehicleSettingsOpen}>
                         <div className="vehicle-info__glass">
                             <div className="vehicle-selector">
@@ -121,7 +122,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                         {track && track.id === 'procedural' ? <><TrackMiniature config={props.proceduralConfig} seed={props.proceduralSeed} difficulty={props.proceduralDifficulty} /><div className="track-panel__body"><span className="track-panel__label">{track.label}</span><strong>{proceduralLength} m</strong><span>Difficulté {props.proceduralDifficulty.toUpperCase()}</span><span>Seed {props.proceduralSeed}</span></div><button className="track-new-btn" type="button" tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onNewTrack}>New Track</button></> : <><div className="track-miniature track-miniature--empty">GP</div><div className="track-panel__body"><span className="track-panel__label">{track ? track.label : 'No track'}</span><strong>Indisponible</strong><span>{track ? track.unavailableReason || 'Asset absent' : 'Mode indisponible'}</span></div></>}
                     </div>
                 </section>
-                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} />
+                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} onHighlightNodeIds={setHighlightedVehicleNodeIds} />
             </div>
         </div>
     );
