@@ -1,7 +1,8 @@
-import { MutableRefObject, useMemo, useState } from 'react';
+import { MutableRefObject, useCallback, useEffect, useMemo, useState } from 'react';
 import { GAME_MODES, TRACKS, VEHICLES, GameModeDefinition, VehicleDefinition, VehicleStatKey } from '../../ui/menu/catalog';
 import { TrackConfig } from '../../world/ProceduralTrack';
 import { ThemeName } from '../types';
+import { MenuRoute } from '../hooks/useHashRoute';
 import { getProceduralLength, TrackMiniature } from './TrackMiniature';
 import { VehiclePreviewStage } from './VehiclePreviewStage';
 import { AnimatedNumber } from './AnimatedNumber';
@@ -9,6 +10,7 @@ import { AnimatedStatBar } from './AnimatedStatBar';
 import { ShowroomVehicleHandle } from './ShowroomVehicleCanvas';
 import { VehicleSettingsView } from './VehicleSettingsView';
 import { Wrench } from 'lucide-react';
+import { getVehicleStats, saveVehicleStats } from '../../core/AppStorage';
 
 interface ShowroomProps {
     theme: ThemeName;
@@ -21,6 +23,8 @@ interface ShowroomProps {
     proceduralSeed: number;
     proceduralDifficulty: string;
     previewRef: MutableRefObject<ShowroomVehicleHandle | null>;
+    vehicleSettingsOpen: boolean;
+    onNavigateMenu: (route: MenuRoute) => void;
     onThemeToggle: () => void;
     onModeSelect: (modeId: GameModeDefinition['id']) => void;
     onVehicleChange: (direction: -1 | 1) => void;
@@ -30,10 +34,35 @@ interface ShowroomProps {
 }
 
 export function Showroom(props: ShowroomProps): JSX.Element {
-    const [vehicleSettingsOpen, setVehicleSettingsOpen] = useState(false);
-    const vehicle = VEHICLES[props.vehicleIndex] || VEHICLES[0];
+    const vehicleSettingsOpen = props.vehicleSettingsOpen;
+    const [statsOverrides, setStatsOverrides] = useState<Record<VehicleStatKey, number> | null>(null);
+    const rawVehicle = VEHICLES[props.vehicleIndex] || VEHICLES[0];
+    const vehicle = useMemo((): typeof rawVehicle => {
+        if (!statsOverrides) return rawVehicle;
+        return {
+            ...rawVehicle,
+            stats: Object.fromEntries(
+                (Object.keys(rawVehicle.stats) as VehicleStatKey[]).map((k) => [
+                    k,
+                    { ...rawVehicle.stats[k], value: statsOverrides[k] ?? rawVehicle.stats[k].value }
+                ])
+            ) as typeof rawVehicle.stats
+        };
+    }, [rawVehicle, statsOverrides]);
     const previousIndex = (props.vehicleIndex - props.vehicleDirection + VEHICLES.length) % VEHICLES.length;
     const previousVehicle = props.vehicleDirection === 0 ? null : VEHICLES[previousIndex];
+
+    useEffect(() => {
+        setStatsOverrides(null);
+        getVehicleStats(rawVehicle.id).then((overrides) => {
+            if (overrides) setStatsOverrides(overrides as Record<VehicleStatKey, number>);
+        });
+    }, [rawVehicle.id]);
+
+    const handleStatsSave = useCallback(async (vehicleId: string, overrides: Record<VehicleStatKey, number>): Promise<void> => {
+        await saveVehicleStats(vehicleId, overrides);
+        setStatsOverrides(overrides);
+    }, []);
     const mode = GAME_MODES.find((item) => item.id === props.modeId) || GAME_MODES[0];
     const track = mode.trackId ? TRACKS.find((item) => item.id === mode.trackId) || TRACKS[0] : null;
     const isValid = !!track && isModeEnabled(mode, props.trackAvailability);
@@ -73,7 +102,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                             <div className="vehicle-selector">
                                 <button id="vehicle-prev" className="vehicle-nav" type="button" aria-label="Véhicule précédent" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => props.onVehicleChange(-1)}>‹</button>
                                 <div className="vehicle-title"><h2 id="showroom-vehicle-name">{vehicle.name}</h2></div>
-                                <button className="vehicle-settings-trigger" type="button" aria-label="Ouvrir les réglages du véhicule" aria-pressed={vehicleSettingsOpen} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => setVehicleSettingsOpen(true)}>
+                                <button className="vehicle-settings-trigger" type="button" aria-label="Ouvrir les réglages du véhicule" aria-pressed={vehicleSettingsOpen} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => props.onNavigateMenu('garage')}>
                                     <Wrench size={18} strokeWidth={2.1} aria-hidden="true" />
                                 </button>
                                 <button id="vehicle-next" className="vehicle-nav" type="button" aria-label="Véhicule suivant" disabled={props.transitionLocked} aria-disabled={props.transitionLocked} tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={() => props.onVehicleChange(1)}>›</button>
@@ -92,7 +121,7 @@ export function Showroom(props: ShowroomProps): JSX.Element {
                         {track && track.id === 'procedural' ? <><TrackMiniature config={props.proceduralConfig} seed={props.proceduralSeed} difficulty={props.proceduralDifficulty} /><div className="track-panel__body"><span className="track-panel__label">{track.label}</span><strong>{proceduralLength} m</strong><span>Difficulté {props.proceduralDifficulty.toUpperCase()}</span><span>Seed {props.proceduralSeed}</span></div><button className="track-new-btn" type="button" tabIndex={vehicleSettingsOpen ? -1 : 0} onClick={props.onNewTrack}>New Track</button></> : <><div className="track-miniature track-miniature--empty">GP</div><div className="track-panel__body"><span className="track-panel__label">{track ? track.label : 'No track'}</span><strong>Indisponible</strong><span>{track ? track.unavailableReason || 'Asset absent' : 'Mode indisponible'}</span></div></>}
                     </div>
                 </section>
-                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => setVehicleSettingsOpen(false)} />
+                <VehicleSettingsView active={vehicleSettingsOpen} vehicle={vehicle} transitionLocked={props.transitionLocked} onVehicleChange={props.onVehicleChange} onClose={() => props.onNavigateMenu('showroom')} onStatsSave={handleStatsSave} />
             </div>
         </div>
     );
