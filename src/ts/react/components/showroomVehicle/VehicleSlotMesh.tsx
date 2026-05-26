@@ -150,7 +150,7 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelRe
     return (
         <group ref={groupRef}>
             <primitive ref={modelRef} object={model} />
-            <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} rotationYRef={rotationYRef} />
+            <VehicleHighlightBoxes model={model} highlightedNodeIds={highlightedNodeIds} hoveredNodeId={pickingMode ? hoveredNodeId : null} rotationYRef={rotationYRef} />
             {pickingMode && <VehiclePickOutlines model={model} hoveredNodeId={hoveredNodeId} selectedNodeIds={highlightedNodeIds} />}
         </group>
     );
@@ -158,16 +158,17 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, onModelRe
 
 export type { SlotAnimationProps };
 
-function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
+function VehicleHighlightBoxes({ model, highlightedNodeIds, hoveredNodeId, rotationYRef }: { model: THREE.Group; highlightedNodeIds: string[]; hoveredNodeId?: string | null; rotationYRef: MutableRefObject<number>; }): JSX.Element | null {
     const groupRef = useRef<THREE.Group | null>(null);
     const boxes = useMemo(() => {
         const sourceRoot = model.children[0];
-        if (!sourceRoot || highlightedNodeIds.length === 0) return [];
+        const allIds = [...new Set([...highlightedNodeIds, ...(hoveredNodeId ? [hoveredNodeId] : [])])];
+        if (!sourceRoot || allIds.length === 0) return [];
         model.updateMatrixWorld(true);
         sourceRoot.updateMatrixWorld(true);
         const nodeIndex = createVehicleNodeIndex(sourceRoot);
         const inverse = model.matrixWorld.clone().invert();
-        return highlightedNodeIds.flatMap((nodeId) => {
+        return allIds.flatMap((nodeId) => {
             const node = nodeIndex.get(nodeId);
             if (!node) return [];
             const worldBox = new THREE.Box3().setFromObject(node);
@@ -178,7 +179,7 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
             worldBox.getSize(size);
             return [{ id: nodeId, center, size }];
         });
-    }, [highlightedNodeIds, model]);
+    }, [highlightedNodeIds, hoveredNodeId, model]);
 
     useFrame(() => {
         if (groupRef.current) groupRef.current.rotation.y = rotationYRef.current;
@@ -190,7 +191,7 @@ function VehicleHighlightBoxes({ model, highlightedNodeIds, rotationYRef }: { mo
             {boxes.map((box) => (
                 <mesh key={box.id} position={box.center}>
                     <boxGeometry args={[Math.max(box.size.x, 0.02), Math.max(box.size.y, 0.02), Math.max(box.size.z, 0.02)]} />
-                    <meshBasicMaterial color="#ff8a1f" wireframe transparent opacity={0.82} depthTest={false} />
+                    <meshBasicMaterial color="#00e5ff" wireframe transparent opacity={0.75} depthTest={false} />
                 </mesh>
             ))}
         </group>
@@ -239,12 +240,8 @@ function VehiclePickOutlines({ model, hoveredNodeId, selectedNodeIds }: {
             outlinesByMesh.set(mesh, outlineMesh);
         };
 
-        const hoverMeshes = hoveredNodeId ? getMeshes(hoveredNodeId) : [];
-        const selectedMeshes = selectedNodeIds.flatMap(getMeshes);
-        const hoverSet = new Set(hoverMeshes.map((m) => m.uuid));
-
-        hoverMeshes.forEach((m) => addOutline(m, '#00e5ff', 0.055));
-        selectedMeshes.filter((m) => !hoverSet.has(m.uuid)).forEach((m) => addOutline(m, '#ff8a1f', 0.04));
+        const allNodeIds = [...new Set([...(hoveredNodeId ? [hoveredNodeId] : []), ...selectedNodeIds])];
+        allNodeIds.flatMap(getMeshes).forEach((m) => addOutline(m, '#00e5ff', 0.055));
 
         return () => {
             outlinesByMesh.forEach((outlineMesh) => {
