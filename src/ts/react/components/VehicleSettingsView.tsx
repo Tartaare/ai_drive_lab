@@ -137,6 +137,24 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
     const toggleTreeNode = (nodeId: string): void =>
         setExpandedNodes((prev) => { const next = new Set(prev); next.has(nodeId) ? next.delete(nodeId) : next.add(nodeId); return next; });
 
+    const openTreeForRole = useCallback((role: VehicleSetupRole): void => {
+        const isAlreadyOpen = openRole === role;
+        setOpenRole(isAlreadyOpen ? null : role);
+        if (isAlreadyOpen) return;
+        const selected = assignments[role]?.nodeIds ?? [];
+        if (selected.length === 0) return;
+        setExpandedNodes((prev) => {
+            const next = new Set(prev);
+            selected.forEach((nodeId) => {
+                const parts = nodeId.split('/');
+                for (let i = 1; i < parts.length; i++) {
+                    next.add(parts.slice(0, i).join('/'));
+                }
+            });
+            return next;
+        });
+    }, [openRole, assignments]);
+
     const handleSlider = (key: VehicleStatKey, raw: string): void => {
         setDraft((prev) => ({ ...prev, [key]: Number(raw) }));
         setDirty(true);
@@ -261,7 +279,7 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                                         aria-expanded={expanded}
                                         aria-label={`Ouvrir l'arbre de nœuds pour ${role.shortLabel}`}
                                         title="Arbre des nœuds"
-                                        onClick={() => setOpenRole(expanded ? null : role.id)}
+                                        onClick={() => openTreeForRole(role.id)}
                                         onFocus={() => highlightRole(role.id)}
                                     >
                                         <FolderTree size={15} strokeWidth={1.8} />
@@ -281,7 +299,11 @@ export function VehicleSettingsView({ active, vehicle, transitionLocked, onVehic
                                 {expanded && (
                                     <div className="vehicle-setup-dropdown">
                                         <button className="vehicle-setup-clear" type="button" tabIndex={active ? 0 : -1} onClick={() => clearRole(role.id)}>Auto / aucun mesh</button>
-                                        <div className="vehicle-setup-options">
+                                        <div className="vehicle-setup-options" ref={(el) => {
+                                                if (!el) return;
+                                                const firstSelected = el.querySelector<HTMLElement>('.vehicle-setup-option--selected');
+                                                if (firstSelected) firstSelected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                                            }}>
                                             {renderTreeNodes(rootNodes, childrenByParentId, expandedNodes, toggleTreeNode, selected, active, role.id, assignments, onHighlightNodeIds, toggleNode)}
                                         </div>
                                     </div>
