@@ -104,47 +104,35 @@ export function VehicleSlotMesh({ slot, rotationYRef, onReady, onDone, highlight
     useEffect(() => {
         const sourceRoot = model.children[0];
         if (!sourceRoot) return;
+
+        if (highlightedNodeIds.length === 0) return;
+
         const nodeIndex = createVehicleNodeIndex(sourceRoot);
-        const isHighlighting = highlightedNodeIds.length > 0;
-
         const highlightedMeshIds = new Set<string>();
-        if (isHighlighting) {
-            highlightedNodeIds.forEach((nodeId) => {
-                const node = nodeIndex.get(nodeId);
-                node?.traverse((child) => {
-                    if ((child as THREE.Mesh).isMesh) highlightedMeshIds.add(child.uuid);
-                });
-            });
-        }
-
-        sourceRoot.traverse((child) => {
-            const mesh = child as THREE.Mesh;
-            if (!mesh.isMesh) return;
-            const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-            materials.forEach((mat) => {
-                const m = mat as THREE.MeshStandardMaterial;
-                if (isHighlighting && !highlightedMeshIds.has(mesh.uuid)) {
-                    m.transparent = true;
-                    m.opacity = 0.1;
-                } else {
-                    m.transparent = false;
-                    m.opacity = 1;
-                }
-                m.needsUpdate = true;
+        highlightedNodeIds.forEach((nodeId) => {
+            const node = nodeIndex.get(nodeId);
+            node?.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) highlightedMeshIds.add(child.uuid);
             });
         });
 
+        const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+
+        sourceRoot.traverse((child) => {
+            const mesh = child as THREE.Mesh;
+            if (!mesh.isMesh || highlightedMeshIds.has(mesh.uuid)) return;
+            originalMaterials.set(mesh, mesh.material);
+            const cloned = Array.isArray(mesh.material)
+                ? mesh.material.map((m) => { const c = m.clone(); c.transparent = true; (c as THREE.MeshStandardMaterial).opacity = 0.1; return c; })
+                : (() => { const c = mesh.material.clone(); c.transparent = true; (c as THREE.MeshStandardMaterial).opacity = 0.1; return c; })();
+            mesh.material = cloned;
+        });
+
         return () => {
-            sourceRoot.traverse((child) => {
-                const mesh = child as THREE.Mesh;
-                if (!mesh.isMesh) return;
-                const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-                materials.forEach((mat) => {
-                    const m = mat as THREE.MeshStandardMaterial;
-                    m.transparent = false;
-                    m.opacity = 1;
-                    m.needsUpdate = true;
-                });
+            originalMaterials.forEach((original, mesh) => {
+                if (Array.isArray(mesh.material)) mesh.material.forEach((m) => m.dispose());
+                else mesh.material.dispose();
+                mesh.material = original;
             });
         };
     }, [highlightedNodeIds, model]);
